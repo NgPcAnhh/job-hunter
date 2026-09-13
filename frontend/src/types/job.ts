@@ -150,3 +150,31 @@ export interface PipelineMonitorData {
     alertChannel: string;
   };
 }
+
+export type ApplicationStatus = 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+
+export interface SavedJobItem {
+  job: UnifiedJob;
+  status: ApplicationStatus;
+  savedAt: string;
+  notes?: string;
+}
+
+export interface CompanyOverviewItem {
+  company_name: string;
+  company_logo?: string | null;
+  company_url?: string | null;
+  job_count: number;
+  locations: string[];
+  sample_titles: string[];
+  sample_salary?: string | null;
+  industry_sector?: string;
+}
+
+export interface IndustrySectorItem {
+  sector: string;
+  count: number;
+  percentage: number;
+  topCompanies: string[];
+}
+

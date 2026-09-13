@@ -1,18 +1,47 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Briefcase, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Briefcase,
+  TrendingUp,
+  DollarSign,
+  Activity,
+  Building2,
+  Bookmark,
+} from 'lucide-react';
+import { getSavedJobs } from '@/lib/savedJobs';
 
 export default function HeaderNav() {
   const pathname = usePathname();
+  const [savedCount, setSavedCount] = useState<number>(0);
+
+  const updateCount = () => {
+    const list = getSavedJobs();
+    setSavedCount(list.length);
+  };
+
+  useEffect(() => {
+    updateCount();
+    window.addEventListener('savedJobsUpdated', updateCount);
+    return () => window.removeEventListener('savedJobsUpdated', updateCount);
+  }, []);
 
   const navItems = [
     { label: 'Tổng quan', href: '/', icon: LayoutDashboard },
     { label: 'Xu hướng Kỹ năng', href: '/trends', icon: TrendingUp },
     { label: 'Ma trận Lương', href: '/salaries', icon: DollarSign },
+    { label: 'Doanh nghiệp', href: '/companies', icon: Building2 },
     { label: 'Giám sát Pipeline', href: '/monitor', icon: Activity },
     { label: 'Bộ lọc Việc làm', href: '/jobs', icon: Briefcase },
+    {
+      label: 'Việc đã lưu',
+      href: '/saved',
+      icon: Bookmark,
+      badge: savedCount > 0 ? savedCount : null,
+    },
   ];
 
   return (
@@ -40,6 +69,20 @@ export default function HeaderNav() {
           >
             <Icon size={15} color={isActive ? '#ff6b00' : '#64748b'} />
             <span>{item.label}</span>
+            {item.badge !== null && item.badge !== undefined && (
+              <span
+                style={{
+                  background: isActive ? '#ea580c' : '#ffedd5',
+                  color: isActive ? '#ffffff' : '#ea580c',
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                }}
+              >
+                {item.badge}
+              </span>
+            )}
           </Link>
         );
       })}

@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UnifiedJob, JobsApiResponse } from '@/types/job';
 import JobDetailModal from '@/components/jobs/JobDetailModal';
+import JobCompareModal from '@/components/jobs/JobCompareModal';
+import { exportJobsToCsv } from '@/lib/exportCsv';
+import { isJobSaved, saveJob, removeSavedJob } from '@/lib/savedJobs';
 import {
   Search,
   Filter,
@@ -20,6 +23,10 @@ import {
   X,
   SlidersHorizontal,
   Check,
+  Bookmark,
+  Scale,
+  Download,
+  Share2,
 } from 'lucide-react';
 
 const QUICK_TAGS = ['React', 'NodeJS', 'Python', 'Golang', 'Java', 'Tester', 'DevOps', 'Fresher', 'Senior'];
@@ -47,6 +54,34 @@ export default function JobsPage() {
 
   // Selected Job for Modal
   const [selectedJob, setSelectedJob] = useState<UnifiedJob | null>(null);
+
+  // Compare List State
+  const [compareJobs, setCompareJobs] = useState<UnifiedJob[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
+
+  // Saved Jobs lookup state for quick UI updates
+  const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
+
+  const updateSavedUrls = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('jobs_hunter_saved_jobs_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setSavedUrls(new Set(parsed.map((item: any) => item.job?.job_url)));
+      } else {
+        setSavedUrls(new Set());
+      }
+    } catch {
+      setSavedUrls(new Set());
+    }
+  }, []);
+
+  useEffect(() => {
+    updateSavedUrls();
+    window.addEventListener('savedJobsUpdated', updateSavedUrls);
+    return () => window.removeEventListener('savedJobsUpdated', updateSavedUrls);
+  }, [updateSavedUrls]);
 
   // Debounce search term input by 350ms
   useEffect(() => {
@@ -106,6 +141,37 @@ export default function JobsPage() {
     setSelectedExperience('all');
     setSortBy('latest');
     setPage(1);
+  };
+
+  const handleToggleCompare = (job: UnifiedJob, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setCompareJobs((prev) => {
+      const exists = prev.some((j) => j.job_url === job.job_url);
+      if (exists) {
+        return prev.filter((j) => j.job_url !== job.job_url);
+      }
+      if (prev.length >= 3) {
+        alert('Bạn chỉ có thể so sánh tối đa 3 việc làm cùng một lúc.');
+        return prev;
+      }
+      return [...prev, job];
+    });
+  };
+
+  const handleToggleSaveJob = (job: UnifiedJob, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const isSaved = savedUrls.has(job.job_url);
+    if (isSaved) {
+      removeSavedJob(job.job_url);
+    } else {
+      saveJob(job, 'saved');
+    }
+  };
+
+  const handleExportCsv = () => {
+    if (jobs.length === 0) return;
+    const filename = `viec_lam_it_${new Date().toISOString().slice(0, 10)}.csv`;
+    exportJobsToCsv(jobs, filename);
   };
 
   const getSourceBadgeClass = (source: string) => {
@@ -403,23 +469,41 @@ export default function JobsPage() {
                 )}
               </div>
 
-              {/* Sort By Dropdown */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600 }}>Sắp xếp:</span>
-                <select
-                  className="filter-select"
-                  style={{ padding: '0.45rem 2rem 0.45rem 0.75rem', fontSize: '0.825rem' }}
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setPage(1);
+              {/* Actions: Export Excel & Sort By Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleExportCsv}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '0.45rem 0.75rem',
+                    fontSize: '0.825rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
                   }}
+                  title="Xuất danh sách công việc hiện tại ra file CSV chuẩn UTF-8 tương thích Excel"
                 >
-                  <option value="similarity">🎯 Độ tương quan cao nhất</option>
-                  <option value="latest">⚡ Mới cập nhật</option>
-                  <option value="deadline">📅 Hạn nộp hồ sơ</option>
-                  <option value="title">🔤 Tiêu đề A-Z</option>
-                </select>
+                  <Download size={14} color="#64748b" />
+                  <span>Xuất Excel ({jobs.length})</span>
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600 }}>Sắp xếp:</span>
+                  <select
+                    className="filter-select"
+                    style={{ padding: '0.45rem 2rem 0.45rem 0.75rem', fontSize: '0.825rem' }}
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="similarity">🎯 Độ tương quan cao nhất</option>
+                    <option value="latest">⚡ Mới cập nhật</option>
+                    <option value="deadline">📅 Hạn nộp hồ sơ</option>
+                    <option value="title">🔤 Tiêu đề A-Z</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -641,28 +725,76 @@ export default function JobsPage() {
                         borderTop: '1px solid #f1f5f9',
                       }}
                     >
-                      <span style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
-                        Xem chi tiết &rarr;
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(job.job_url, '_blank', 'noopener,noreferrer');
-                        }}
-                        style={{
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          color: '#64748b',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '5px',
-                        }}
-                        title="Mở tin gốc"
-                      >
-                        <ExternalLink size={15} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleSaveJob(job, e)}
+                          style={{
+                            background: savedUrls.has(job.job_url) ? '#fff7ed' : '#f8fafc',
+                            border: `1px solid ${savedUrls.has(job.job_url) ? '#fdba74' : '#e2e8f0'}`,
+                            borderRadius: '6px',
+                            padding: '4px 7px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            fontSize: '0.75rem',
+                            color: savedUrls.has(job.job_url) ? '#ea580c' : '#64748b',
+                            fontWeight: 600,
+                          }}
+                          title={savedUrls.has(job.job_url) ? 'Đã lưu' : 'Lưu việc làm'}
+                        >
+                          <Bookmark size={13} fill={savedUrls.has(job.job_url) ? '#ea580c' : 'none'} color={savedUrls.has(job.job_url) ? '#ea580c' : '#64748b'} />
+                          <span>{savedUrls.has(job.job_url) ? 'Đã lưu' : 'Lưu'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleCompare(job, e)}
+                          style={{
+                            background: compareJobs.some((j) => j.job_url === job.job_url) ? '#eff6ff' : '#f8fafc',
+                            border: `1px solid ${compareJobs.some((j) => j.job_url === job.job_url) ? '#93c5fd' : '#e2e8f0'}`,
+                            borderRadius: '6px',
+                            padding: '4px 7px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            fontSize: '0.75rem',
+                            color: compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#64748b',
+                            fontWeight: 600,
+                          }}
+                          title="Thêm vào bảng so sánh"
+                        >
+                          <Scale size={13} color={compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#64748b'} />
+                          <span>{compareJobs.some((j) => j.job_url === job.job_url) ? 'Đang so sánh' : 'So sánh'}</span>
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
+                          Chi tiết &rarr;
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(job.job_url, '_blank', 'noopener,noreferrer');
+                          }}
+                          style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '6px',
+                            color: '#64748b',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '5px',
+                          }}
+                          title="Mở tin gốc"
+                        >
+                          <ExternalLink size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -714,11 +846,77 @@ export default function JobsPage() {
         </main>
       </div>
 
+      {/* Floating Comparison Bar when jobs are selected for compare */}
+      {compareJobs.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#0f172a',
+            color: 'white',
+            borderRadius: '12px',
+            padding: '0.75rem 1.25rem',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            zIndex: 900,
+            maxWidth: '90vw',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Scale size={18} color="#ff6b00" />
+            <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+              Đã chọn <strong style={{ color: '#ff6b00' }}>{compareJobs.length}</strong> / 3 việc làm
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setIsCompareModalOpen(true)}
+              className="btn btn-primary"
+              style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
+            >
+              So sánh chi tiết ngay
+            </button>
+            <button
+              onClick={() => setCompareJobs([])}
+              style={{
+                background: 'transparent',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                color: '#94a3b8',
+                padding: '0.4rem 0.6rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              Xóa tất cả
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Detail Modal */}
       <JobDetailModal
         job={selectedJob}
         onClose={() => setSelectedJob(null)}
+        onAddToCompare={(job) => handleToggleCompare(job)}
+        isCompared={selectedJob ? compareJobs.some((j) => j.job_url === selectedJob.job_url) : false}
       />
+
+      {/* Compare Modal */}
+      {isCompareModalOpen && (
+        <JobCompareModal
+          jobs={compareJobs}
+          onClose={() => setIsCompareModalOpen(false)}
+          onRemoveJob={(jobUrl) => {
+            setCompareJobs((prev) => prev.filter((j) => j.job_url !== jobUrl));
+          }}
+        />
+      )}
     </div>
   );
 }

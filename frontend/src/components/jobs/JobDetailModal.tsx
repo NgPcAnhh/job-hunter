@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UnifiedJob } from '@/types/job';
+import { isJobSaved, saveJob, removeSavedJob } from '@/lib/savedJobs';
 import {
   X,
   ExternalLink,
@@ -13,14 +14,34 @@ import {
   Clock,
   Building,
   CheckCircle2,
+  Bookmark,
+  Share2,
+  Check,
+  Scale,
 } from 'lucide-react';
 
 interface JobDetailModalProps {
   job: UnifiedJob | null;
   onClose: () => void;
+  onAddToCompare?: (job: UnifiedJob) => void;
+  isCompared?: boolean;
 }
 
-export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
+export default function JobDetailModal({
+  job,
+  onClose,
+  onAddToCompare,
+  isCompared = false,
+}: JobDetailModalProps) {
+  const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (job) {
+      setSaved(isJobSaved(job.job_url));
+    }
+  }, [job]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -30,6 +51,24 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
   }, [onClose]);
 
   if (!job) return null;
+
+  const handleToggleSave = () => {
+    if (saved) {
+      removeSavedJob(job.job_url);
+      setSaved(false);
+    } else {
+      saveJob(job, 'saved');
+      setSaved(true);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(job.job_url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const getSourceBadgeClass = (source: string) => {
     switch (source.toLowerCase()) {
@@ -64,7 +103,7 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
       <div className="modal-content">
         {/* Modal Header */}
         <div className="modal-header">
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
             {/* Company Logo / Avatar */}
             {job.company_logo ? (
               <img
@@ -79,6 +118,7 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
                   padding: '4px',
                   border: '1px solid #e5e7eb',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  flexShrink: 0,
                 }}
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
@@ -98,13 +138,14 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
                   fontWeight: 800,
                   color: 'white',
                   boxShadow: '0 4px 12px rgba(255, 107, 0, 0.25)',
+                  flexShrink: 0,
                 }}
               >
                 {job.company_name?.charAt(0)?.toUpperCase() || 'J'}
               </div>
             )}
 
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
                 <span className={`badge ${getSourceBadgeClass(job.source)}`}>
                   {job.source.toUpperCase()}
@@ -137,21 +178,48 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            style={{
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '6px',
-              color: '#64748b',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <button
+              onClick={handleToggleSave}
+              className="btn btn-secondary"
+              style={{
+                padding: '0.45rem 0.75rem',
+                fontSize: '0.8rem',
+                color: saved ? '#ea580c' : '#475569',
+                borderColor: saved ? '#fdba74' : '#e2e8f0',
+                background: saved ? '#fff7ed' : '#ffffff',
+              }}
+              title={saved ? 'Bỏ lưu việc làm' : 'Lưu vào danh sách theo dõi'}
+            >
+              <Bookmark size={15} fill={saved ? '#ea580c' : 'none'} color={saved ? '#ea580c' : '#64748b'} />
+              <span>{saved ? 'Đã lưu' : 'Lưu tin'}</span>
+            </button>
+
+            <button
+              onClick={handleCopyLink}
+              className="btn btn-secondary"
+              style={{ padding: '0.45rem 0.65rem', fontSize: '0.8rem' }}
+              title="Sao chép liên kết"
+            >
+              {copied ? <Check size={15} color="#16a34a" /> : <Share2 size={15} color="#64748b" />}
+            </button>
+
+            <button
+              onClick={onClose}
+              style={{
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '6px',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
@@ -302,7 +370,21 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
           <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
             Đồng bộ lần cuối: {job.created_at ? new Date(job.created_at).toLocaleString('vi-VN') : 'N/A'}
           </span>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {onAddToCompare && (
+              <button
+                onClick={() => onAddToCompare(job)}
+                className="btn btn-secondary"
+                style={{
+                  color: isCompared ? '#ea580c' : '#475569',
+                  borderColor: isCompared ? '#fdba74' : '#cbd5e1',
+                  background: isCompared ? '#fff7ed' : '#ffffff',
+                }}
+              >
+                <Scale size={16} color={isCompared ? '#ea580c' : '#64748b'} />
+                {isCompared ? 'Đã thêm so sánh' : 'Thêm vào so sánh'}
+              </button>
+            )}
             <button onClick={onClose} className="btn btn-secondary">
               Đóng
             </button>
@@ -313,7 +395,7 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
               className="btn btn-primary"
             >
               <ExternalLink size={16} />
-              Ứng tuyển / Xem tin gốc trên {job.source.toUpperCase()}
+              Ứng tuyển trên {job.source.toUpperCase()}
             </a>
           </div>
         </div>
