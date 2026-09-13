@@ -27,9 +27,9 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
         required: false
         default: '0.90'
       workers:
-        description: 'Số luồng crawler chạy song song cùng lúc (mặc định: 2)'
+        description: 'Số luồng crawler chạy song song cùng lúc an toàn hạ tầng (mặc định: 3)'
         required: false
-        default: '2'
+        default: '3'
 
 concurrency:
   group: job-crawler-pipeline

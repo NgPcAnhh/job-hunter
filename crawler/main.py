@@ -65,6 +65,10 @@ def crawl_single_spider(site_name: str, mod_path: str, func_name: str, pages: in
         logger.error(f"❌ Thất bại khi cào {site_name}: {e}")
         notify_site_progress(site_name, 0, "FAILED", duration)
         return site_name, {"status": "FAILED", "error": str(e), "jobs": 0, "duration": duration}
+    finally:
+        # Giải phóng bộ nhớ RAM triệt để sau khi mỗi spider hoàn thành (đặc biệt là Playwright/Chromium)
+        import gc
+        gc.collect()
 
 
 def run_pipeline(
@@ -73,10 +77,10 @@ def run_pipeline(
     max_jobs_per_page="max",
     dedup_threshold=0.90,
     skip_sync=False,
-    max_workers=2
+    max_workers=3
 ):
     """
-    Chạy song song (mặc định 2 workers) các crawler lưu vào bảng riêng (`jobs_<source>`),
+    Chạy song song (mặc định 3 workers) các crawler lưu vào bảng riêng (`jobs_<source>`),
     sau đó đồng bộ khử trùng lặp vào `all_jobs_unified`.
     """
     start_time_all = time.time()
@@ -179,7 +183,7 @@ def main():
     parser.add_argument("--pages", type=int, default=10, help="Số trang mỗi site (mặc định: 10)")
     parser.add_argument("--jobs-per-page", default="max", help="Số job mỗi trang (mặc định: 'max')")
     parser.add_argument("--dedup-threshold", type=float, default=0.90, help="Ngưỡng so sánh tương đồng (mặc định: 0.90)")
-    parser.add_argument("--workers", type=int, default=2, help="Số luồng chạy song song (mặc định: 2)")
+    parser.add_argument("--workers", type=int, default=3, help="Số luồng chạy song song an toàn cho hạ tầng (mặc định: 3)")
     parser.add_argument("--skip-sync", action="store_true", help="Chỉ cào vào bảng riêng, không đồng bộ sang bảng tổng")
 
     args = parser.parse_args()
