@@ -38,6 +38,7 @@ export interface UnifiedJob {
   benefits?: string | null;
   extra_info?: ExtraInfo | null;
   created_at?: string;
+  match_score?: number; // Similarity percentage (0 - 100)
 }
 
 export type JobItem = UnifiedJob;
@@ -49,7 +50,7 @@ export interface JobFilterState {
   level: string;
   experience: string;
   workType: string;
-  sortBy: 'latest' | 'deadline' | 'title';
+  sortBy: 'latest' | 'deadline' | 'title' | 'similarity';
   page: number;
   limit: number;
 }
@@ -98,4 +99,54 @@ export interface SalaryStat {
   min_salary: number;
   max_salary: number;
   count: number;
+}
+
+export interface TechTrendItem {
+  name: string;
+  category: 'Language' | 'Framework' | 'Database/Cloud' | 'Tool';
+  count: number;
+  sharePercent: number;
+  avgSalaryEstimate: string;
+  badge: 'Hot 🔥' | 'Tăng trưởng ↗️' | 'Phổ biến ⚡';
+}
+
+export interface SalaryLevelStat {
+  level: string;
+  range: string;
+  avgVnd: number;
+  count: number;
+  description: string;
+}
+
+export interface SalaryCityStat {
+  city: string;
+  avgVnd: number;
+  range: string;
+  jobCount: number;
+}
+
+export interface PipelineSpiderStatus {
+  source: string;
+  displayName: string;
+  status: 'ACTIVE' | 'IDLE' | 'WARNING';
+  rawTable: string;
+  rawCount: number;
+  unifiedCount: number;
+  dedupRatio: number;
+  lastRun: string;
+  engine: 'requests' | 'curl_cffi' | 'playwright';
+}
+
+export interface PipelineMonitorData {
+  totalRawScraped: number;
+  totalUnifiedSaved: number;
+  totalDuplicatesMerged: number;
+  overallDedupPercent: number;
+  spiders: PipelineSpiderStatus[];
+  cronSchedule: {
+    expression: string;
+    scheduleDescription: string;
+    parallelWorkers: number;
+    alertChannel: string;
+  };
 }

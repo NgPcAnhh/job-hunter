@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const level = searchParams.get('level')?.trim() || '';
     const experience = searchParams.get('experience')?.trim() || '';
     const workType = searchParams.get('workType')?.trim() || '';
-    const sortBy = searchParams.get('sortBy') || 'latest';
+    const sortBy = searchParams.get('sortBy') || (q ? 'similarity' : 'latest');
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '12', 10)));
     const offset = (page - 1) * limit;
@@ -22,17 +22,36 @@ export async function GET(req: NextRequest) {
     const whereClauses: string[] = ['1=1'];
     const values: any[] = [];
 
-    // 1. Search full-text across job_title, company_name, description, requirements, keyword
+    let scoreSelectSql = '0 as match_score';
+
+    // 1. High-Similarity & Fuzzy Match Search with pg_trgm & Substring
     if (q) {
-      values.push(`%${q}%`);
-      const idx = values.length;
+      values.push(q);
+      const qIdx = values.length; // $1
+
+      scoreSelectSql = `
+        LEAST(100, GREATEST(10, ROUND(
+          (
+            similarity(COALESCE(job_title, ''), $${qIdx}) * 45.0 +
+            similarity(COALESCE(company_name, ''), $${qIdx}) * 20.0 +
+            similarity(COALESCE(keyword, ''), $${qIdx}) * 15.0 +
+            similarity(COALESCE(job_requirements, ''), $${qIdx}) * 10.0 +
+            CASE WHEN job_title ILIKE '%' || $${qIdx} || '%' THEN 25.0 ELSE 0.0 END +
+            CASE WHEN company_name ILIKE '%' || $${qIdx} || '%' THEN 15.0 ELSE 0.0 END
+          )::numeric, 0
+        ))) as match_score
+      `;
+
       whereClauses.push(`(
-        job_title ILIKE $${idx} OR 
-        company_name ILIKE $${idx} OR 
-        keyword ILIKE $${idx} OR 
-        location_short ILIKE $${idx} OR
-        job_requirements ILIKE $${idx} OR
-        job_description ILIKE $${idx}
+        job_title ILIKE '%' || $${qIdx} || '%' OR 
+        company_name ILIKE '%' || $${qIdx} || '%' OR 
+        keyword ILIKE '%' || $${qIdx} || '%' OR 
+        location_short ILIKE '%' || $${qIdx} || '%' OR
+        job_requirements ILIKE '%' || $${qIdx} || '%' OR
+        job_description ILIKE '%' || $${qIdx} || '%' OR
+        similarity(COALESCE(job_title, ''), $${qIdx}) > 0.08 OR
+        similarity(COALESCE(company_name, ''), $${qIdx}) > 0.12 OR
+        similarity(COALESCE(keyword, ''), $${qIdx}) > 0.12
       )`);
     }
 
@@ -71,7 +90,9 @@ export async function GET(req: NextRequest) {
 
     // Sắp xếp
     let orderBySql = 'created_at DESC';
-    if (sortBy === 'deadline') {
+    if (sortBy === 'similarity' && q) {
+      orderBySql = 'match_score DESC, created_at DESC';
+    } else if (sortBy === 'deadline') {
       orderBySql = 'deadline ASC NULLS LAST, created_at DESC';
     } else if (sortBy === 'title') {
       orderBySql = 'job_title ASC';
@@ -86,7 +107,7 @@ export async function GET(req: NextRequest) {
     // Lấy dữ liệu trang hiện tại
     const dataValues = [...values, limit, offset];
     const dataSql = `
-      SELECT * 
+      SELECT *, ${scoreSelectSql}
       FROM all_jobs_unified 
       WHERE ${whereSql} 
       ORDER BY ${orderBySql} 

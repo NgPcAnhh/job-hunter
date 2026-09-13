@@ -415,6 +415,7 @@ export default function JobsPage() {
                     setPage(1);
                   }}
                 >
+                  <option value="similarity">🎯 Độ tương quan cao nhất</option>
                   <option value="latest">⚡ Mới cập nhật</option>
                   <option value="deadline">📅 Hạn nộp hồ sơ</option>
                   <option value="title">🔤 Tiêu đề A-Z</option>
@@ -497,7 +498,7 @@ export default function JobsPage() {
                     className="job-card"
                     onClick={() => setSelectedJob(job)}
                   >
-                    {/* Top: Source badge, Duplication badge & Date */}
+                    {/* Top: Source badge, Duplication badge, Match score & Date */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className={`badge ${getSourceBadgeClass(job.source)}`}>
@@ -507,6 +508,20 @@ export default function JobsPage() {
                           <span className="badge badge-multi" title={`Đã gộp từ: ${dupSources.join(', ')}`}>
                             <Layers size={11} style={{ marginRight: '3px' }} />
                             +{dupSources.length} nguồn
+                          </span>
+                        )}
+                        {job.match_score !== undefined && job.match_score > 0 && debouncedSearch && (
+                          <span
+                            className="badge"
+                            style={{
+                              background: job.match_score >= 50 ? '#fff7ed' : '#f8fafc',
+                              color: job.match_score >= 50 ? '#ea580c' : '#475569',
+                              borderColor: job.match_score >= 50 ? '#fdba74' : '#e2e8f0',
+                              fontWeight: 700,
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            🎯 {job.match_score}% Phù hợp
                           </span>
                         )}
                       </div>
