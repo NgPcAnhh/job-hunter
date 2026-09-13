@@ -3,18 +3,24 @@ import { supabase } from '@/lib/supabase/client';
 import { JobItem } from '@/types/job';
 
 async function fetchJobs(): Promise<JobItem[]> {
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*')
-    .eq('is_active', true)
-    .order('crawled_at', { ascending: false })
-    .limit(50);
+  try {
+    const res = await fetch('/api/jobs?limit=50');
+    if (!res.ok) throw new Error('Failed to fetch jobs');
+    const data = await res.json();
+    return data.jobs || [];
+  } catch {
+    const { data, error } = await supabase
+      .from('all_jobs_unified')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data as unknown as JobItem[]) || [];
   }
-
-  return (data as JobItem[]) || [];
 }
 
 export function useJobs() {

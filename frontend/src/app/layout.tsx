@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import HeaderNav from '@/components/common/HeaderNav';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -36,11 +37,7 @@ export default function RootLayout({
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Serverless Market Analytics</p>
                 </div>
               </div>
-              <nav style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', fontSize: '0.875rem' }}>
-                <a href="/" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Tổng quan</a>
-                <a href="/trends" style={{ color: 'var(--text-secondary)' }}>Xu hướng Kỹ năng</a>
-                <a href="/jobs" style={{ color: 'var(--text-secondary)' }}>Danh sách tin</a>
-              </nav>
+              <HeaderNav />
             </div>
           </header>
           <main className="container" style={{ padding: '2rem 1.5rem' }}>

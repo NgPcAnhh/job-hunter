@@ -1,56 +1,90 @@
-export interface CompanyItem {
-  id?: string;
-  name: string;
-  slug?: string;
-  address?: string;
-  city?: string;
-  website_url?: string;
-  logo_url?: string;
-  company_size?: string;
-  industry?: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
+export type JobSource =
+  | 'careerlink'
+  | 'careerviet'
+  | 'topcv'
+  | 'vieclam24h'
+  | 'vietnamworks'
+  | 'jobsgo'
+  | 'joboko';
+
+export interface ExtraInfo {
+  duplicate_sources?: string[];
+  synced_at?: string;
+  raw_crawled_at?: string;
+  [key: string]: any;
 }
 
-export interface JobItem {
-  id?: string;
-  source: string;
-  source_job_id: string;
-  
-  // Link bài đăng tuyển dụng gốc & link apply
+export interface UnifiedJob {
   job_url: string;
-  apply_url?: string;
-
-  // Liên kết công ty
-  company_id?: string;
-  company?: CompanyItem;
+  source: string;
+  job_title: string;
   company_name: string;
-  company_address?: string;
+  company_url?: string | null;
+  company_logo?: string | null;
+  salary?: string | null;
+  experience?: string | null;
+  level?: string | null;
+  work_type?: string | null;
+  education?: string | null;
+  industry?: string | null;
+  location_short?: string | null;
+  workplace_detail?: string | null;
+  working_time?: string | null;
+  posted_date?: string | null;
+  deadline?: string | null;
+  keyword?: string | null;
+  job_description?: string | null;
+  job_requirements?: string | null;
+  benefits?: string | null;
+  extra_info?: ExtraInfo | null;
+  created_at?: string;
+}
 
-  // Chi tiết công việc
-  title: string;
-  location?: string;
-  job_level?: 'Intern' | 'Fresher' | 'Junior' | 'Middle' | 'Senior' | 'Lead/Manager';
-  job_type?: string;
+export type JobItem = UnifiedJob;
 
-  // Lương
-  salary_min?: number;
-  salary_max?: number;
-  salary_currency: string;
-  is_salary_negotiable: boolean;
-  salary_avg_vnd?: number;
+export interface JobFilterState {
+  q: string;
+  source: string;
+  location: string;
+  level: string;
+  experience: string;
+  workType: string;
+  sortBy: 'latest' | 'deadline' | 'title';
+  page: number;
+  limit: number;
+}
 
-  // Kỹ năng & Mô tả
-  skills: string[];
-  description_summary?: string;
-  description_raw?: string;
+export interface JobsApiResponse {
+  jobs: UnifiedJob[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  filtersAvailable: {
+    sources: { source: string; count: number }[];
+    locations: { location: string; count: number }[];
+    levels: { level: string; count: number }[];
+  };
+}
 
-  // Vòng đời & Thời gian
-  is_active: boolean;
-  posted_at?: string;
-  crawled_at: string;
-  last_seen_at?: string;
+export interface SourceStat {
+  source: string;
+  rawCount: number;
+  unifiedCount: number;
+}
+
+export interface LocationStat {
+  location: string;
+  count: number;
+}
+
+export interface StatsApiResponse {
+  totalUnified: number;
+  totalDuplicatesDetected: number;
+  sources: SourceStat[];
+  topLocations: LocationStat[];
+  latestJobs: UnifiedJob[];
+  lastCrawledAt?: string;
 }
 
 export interface SkillStat {
@@ -59,8 +93,9 @@ export interface SkillStat {
 }
 
 export interface SalaryStat {
-  job_level: string;
-  total_jobs: number;
-  avg_salary_min: number;
-  avg_salary_max: number;
+  level: string;
+  avg_salary: number;
+  min_salary: number;
+  max_salary: number;
+  count: number;
 }
