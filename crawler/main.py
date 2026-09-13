@@ -32,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_pipeline(sites=None, pages=2, max_jobs_per_page="max", dedup_threshold=0.90, skip_sync=False):
+def run_pipeline(sites=None, pages=10, max_jobs_per_page="max", dedup_threshold=0.90, skip_sync=False):
     """
     Chạy tuần tự các crawler lưu vào bảng riêng (`jobs_<source>`), sau đó đồng bộ khử trùng vào `all_jobs_unified`.
     Đồng thời gửi thông báo tiến trình chi tiết qua Telegram.
@@ -140,7 +140,7 @@ def run_pipeline(sites=None, pages=2, max_jobs_per_page="max", dedup_threshold=0
 def main():
     parser = argparse.ArgumentParser(description="Job Hunter Crawler & Sync Pipeline with Telegram Notifications")
     parser.add_argument("--site", type=str, default=None, help="Tên spider cần chạy (mặc định: toàn bộ)")
-    parser.add_argument("--pages", type=int, default=2, help="Số trang mỗi site (mặc định: 2)")
+    parser.add_argument("--pages", type=int, default=10, help="Số trang mỗi site (mặc định: 10)")
     parser.add_argument("--jobs-per-page", default="max", help="Số job mỗi trang (mặc định: 'max')")
     parser.add_argument("--dedup-threshold", type=float, default=0.90, help="Ngưỡng so sánh tương đồng (mặc định: 0.90)")
     parser.add_argument("--skip-sync", action="store_true", help="Chỉ cào vào bảng riêng, không đồng bộ sang bảng tổng")

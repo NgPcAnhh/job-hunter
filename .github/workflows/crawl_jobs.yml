@@ -15,9 +15,9 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
         required: false
         default: ''
       pages:
-        description: 'Số lượng trang muốn cào cho mỗi website'
+        description: 'Số lượng trang muốn cào cho mỗi website (mặc định: 10)'
         required: false
-        default: '2'
+        default: '10'
       jobs_per_page:
         description: 'Số lượng job mỗi trang (nhập số hoặc "max")'
         required: false
@@ -88,7 +88,7 @@ jobs:
           if [ -n "${{ inputs.pages }}" ]; then
             CMD="$CMD --pages ${{ inputs.pages }}"
           else
-            CMD="$CMD --pages 2"
+            CMD="$CMD --pages 10"
           fi
           
           if [ -n "${{ inputs.jobs_per_page }}" ]; then
