@@ -26,6 +26,10 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
         description: 'Ngưỡng tương quan khử trùng lặp (mặc định: 0.90)'
         required: false
         default: '0.90'
+      workers:
+        description: 'Số luồng crawler chạy song song cùng lúc (mặc định: 2)'
+        required: false
+        default: '2'
 
 concurrency:
   group: job-crawler-pipeline
@@ -97,6 +101,10 @@ jobs:
           
           if [ -n "${{ inputs.dedup_threshold }}" ]; then
             CMD="$CMD --dedup-threshold ${{ inputs.dedup_threshold }}"
+          fi
+
+          if [ -n "${{ inputs.workers }}" ]; then
+            CMD="$CMD --workers ${{ inputs.workers }}"
           fi
           
           echo "Executing command: $CMD"
