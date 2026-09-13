@@ -1,0 +1,6 @@
+các job đã chạy khá ổn định rồi. bây giờ tôi sẽ mô tả kỹ hơn về kiến trúc hệ thống và các bước làm tiếp theo của chúng ta. 
+- đầu tiên ta phải thực hiện data modelling để có thể, mỗi trang web thì lấy các dữ liệu khác nhau cần thống nhất 1 kiểu model duy nhất
+- thiết lập R2 bucket và thực hiện load dữ liệu lên đó. tạo ra các endpoint để kết nối tới 
+- thiết lập job đẩy dữ liệu các trang web lên supabase --> transform về 1 model duy nhất --> lưu vào databricks
+toàn bộ quá trình làm bằng github action, thông báo qua telegram
+- tính toán xử lý gold trên supabase - dùng  github action
