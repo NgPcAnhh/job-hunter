@@ -9,28 +9,36 @@ import time
 import logging
 from typing import Dict, Any, List, Optional
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "")
-GITHUB_RUN_ID = os.getenv("GITHUB_RUN_ID", "")
+
+def get_telegram_token() -> str:
+    return os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+
+
+def get_telegram_chat_id() -> str:
+    return os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
 
 def is_telegram_configured() -> bool:
     """Checks if Telegram credentials are provided in environment."""
-    return bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+    return bool(get_telegram_token() and get_telegram_chat_id())
 
 
 def send_telegram_message(html_text: str, disable_web_page_preview: bool = True) -> bool:
     """Sends an HTML formatted message via Telegram Bot API."""
-    if not is_telegram_configured():
+    token = get_telegram_token()
+    chat_id = get_telegram_chat_id()
+    if not (token and chat_id):
         return False
 
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
+        "chat_id": chat_id,
         "text": html_text,
         "parse_mode": "HTML",
         "disable_web_page_preview": disable_web_page_preview
@@ -52,8 +60,10 @@ def send_telegram_message(html_text: str, disable_web_page_preview: bool = True)
 
 def get_run_link_html() -> str:
     """Returns a clickable HTML link to the GitHub Actions run if running in CI."""
-    if GITHUB_REPOSITORY and GITHUB_RUN_ID:
-        run_url = f"https://github.com/{GITHUB_REPOSITORY}/actions/runs/{GITHUB_RUN_ID}"
+    repo = os.getenv("GITHUB_REPOSITORY", "").strip()
+    run_id = os.getenv("GITHUB_RUN_ID", "").strip()
+    if repo and run_id:
+        run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
         return f'\n🔗 <a href="{run_url}">Xem chi tiết GitHub Actions Run</a>'
     return ""
 
