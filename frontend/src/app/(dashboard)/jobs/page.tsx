@@ -621,13 +621,13 @@ export default function JobsPage() {
                           src={job.company_logo}
                           alt={job.company_name}
                           style={{
-                            width: '46px',
-                            height: '46px',
+                            width: '44px',
+                            height: '44px',
                             borderRadius: '8px',
                             objectFit: 'contain',
-                            background: 'white',
+                            background: '#ffffff',
                             padding: '3px',
-                            border: '1px solid #e2e8f0',
+                            border: '1px solid #edf2f7',
                             flexShrink: 0,
                           }}
                           onError={(e) => {
@@ -637,18 +637,18 @@ export default function JobsPage() {
                       ) : (
                         <div
                           style={{
-                            width: '46px',
-                            height: '46px',
+                            width: '44px',
+                            height: '44px',
                             borderRadius: '8px',
                             background: 'var(--accent-gradient)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '1.15rem',
+                            fontSize: '1.1rem',
                             fontWeight: 800,
                             color: 'white',
                             flexShrink: 0,
-                            boxShadow: '0 2px 8px rgba(255,107,0,0.2)',
+                            boxShadow: '0 2px 6px rgba(255,107,0,0.18)',
                           }}
                         >
                           {job.company_name?.charAt(0)?.toUpperCase() || 'J'}
@@ -661,12 +661,13 @@ export default function JobsPage() {
                         </h3>
                         <p
                           style={{
-                            fontSize: '0.85rem',
+                            fontSize: '0.825rem',
                             color: '#64748b',
                             marginTop: '0.2rem',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
+                            fontWeight: 500,
                           }}
                           title={job.company_name}
                         >
@@ -678,10 +679,10 @@ export default function JobsPage() {
                     {/* Salary Highlight */}
                     <div
                       style={{
-                        padding: '0.45rem 0.75rem',
+                        padding: '0.5rem 0.75rem',
                         background: '#fff7ed',
-                        borderRadius: '6px',
-                        border: '1px solid #ffedd5',
+                        borderRadius: '8px',
+                        border: '1px solid #fed7aa',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -691,25 +692,25 @@ export default function JobsPage() {
                         💰 {job.salary || 'Thương lượng'}
                       </span>
                       {job.level && (
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                        <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 600, background: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
                           {job.level}
                         </span>
                       )}
                     </div>
 
                     {/* Metadata details */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
                       <div className="job-meta-item">
-                        <MapPin size={14} color="#ff6b00" />
+                        <MapPin size={14} color="#ff6b00" style={{ flexShrink: 0 }} />
                         <span>{job.location_short || 'Chưa rõ địa điểm'}</span>
                       </div>
                       <div className="job-meta-item">
-                        <Briefcase size={14} color="#64748b" />
+                        <Briefcase size={14} color="#64748b" style={{ flexShrink: 0 }} />
                         <span>{job.experience || 'Không yêu cầu KN'}</span>
                       </div>
                       {job.deadline && (
                         <div className="job-meta-item">
-                          <Calendar size={14} color="#ea580c" />
+                          <Calendar size={14} color="#ea580c" style={{ flexShrink: 0 }} />
                           <span>Hạn nộp: {job.deadline}</span>
                         </div>
                       )}
@@ -730,19 +731,20 @@ export default function JobsPage() {
                           type="button"
                           onClick={(e) => handleToggleSaveJob(job, e)}
                           style={{
-                            background: savedUrls.has(job.job_url) ? '#fff7ed' : '#f8fafc',
+                            background: savedUrls.has(job.job_url) ? '#fff7ed' : '#ffffff',
                             border: `1px solid ${savedUrls.has(job.job_url) ? '#fdba74' : '#e2e8f0'}`,
                             borderRadius: '6px',
-                            padding: '4px 7px',
+                            padding: '4px 8px',
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '3px',
+                            gap: '4px',
                             fontSize: '0.75rem',
-                            color: savedUrls.has(job.job_url) ? '#ea580c' : '#64748b',
+                            color: savedUrls.has(job.job_url) ? '#ea580c' : '#475569',
                             fontWeight: 600,
+                            transition: 'all 0.15s ease',
                           }}
-                          title={savedUrls.has(job.job_url) ? 'Đã lưu' : 'Lưu việc làm'}
+                          title={savedUrls.has(job.job_url) ? 'Đã lưu việc này' : 'Lưu vào danh sách theo dõi'}
                         >
                           <Bookmark size={13} fill={savedUrls.has(job.job_url) ? '#ea580c' : 'none'} color={savedUrls.has(job.job_url) ? '#ea580c' : '#64748b'} />
                           <span>{savedUrls.has(job.job_url) ? 'Đã lưu' : 'Lưu'}</span>
@@ -752,17 +754,18 @@ export default function JobsPage() {
                           type="button"
                           onClick={(e) => handleToggleCompare(job, e)}
                           style={{
-                            background: compareJobs.some((j) => j.job_url === job.job_url) ? '#eff6ff' : '#f8fafc',
+                            background: compareJobs.some((j) => j.job_url === job.job_url) ? '#eff6ff' : '#ffffff',
                             border: `1px solid ${compareJobs.some((j) => j.job_url === job.job_url) ? '#93c5fd' : '#e2e8f0'}`,
                             borderRadius: '6px',
-                            padding: '4px 7px',
+                            padding: '4px 8px',
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '3px',
+                            gap: '4px',
                             fontSize: '0.75rem',
-                            color: compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#64748b',
+                            color: compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#475569',
                             fontWeight: 600,
+                            transition: 'all 0.15s ease',
                           }}
                           title="Thêm vào bảng so sánh"
                         >
@@ -772,7 +775,7 @@ export default function JobsPage() {
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.825rem', color: '#ff6b00', fontWeight: 700 }}>
                           Chi tiết &rarr;
                         </span>
                         <button
@@ -781,7 +784,7 @@ export default function JobsPage() {
                             window.open(job.job_url, '_blank', 'noopener,noreferrer');
                           }}
                           style={{
-                            background: '#f8fafc',
+                            background: '#ffffff',
                             border: '1px solid #e2e8f0',
                             borderRadius: '6px',
                             color: '#64748b',
