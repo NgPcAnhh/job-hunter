@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function JobsPage() {
@@ -130,16 +131,19 @@ export default function JobsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span className="badge badge-primary">Database Supabase</span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              • Bảng hợp nhất: <code>all_jobs_unified</code>
+            <span className="badge badge-primary">
+              <Sparkles size={12} style={{ marginRight: '3px' }} />
+              Dữ liệu Supabase
+            </span>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              • Bảng hợp nhất: <code style={{ color: '#ea580c', fontWeight: 600 }}>all_jobs_unified</code>
             </span>
           </div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Quản Lý & Tìm Kiếm Việc Làm Chi Tiết
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827' }}>
+            Quản Lý & Tìm Kiếm Việc Làm IT
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '0.25rem' }}>
-            Tìm kiếm full-text, lọc đa chiều và xem chi tiết tin tuyển dụng được khử trùng lặp tự động.
+          <p style={{ color: '#4b5563', fontSize: '0.95rem', marginTop: '0.25rem' }}>
+            Tìm kiếm từ khóa thông minh, lọc đa chiều và xem chi tiết tin tuyển dụng được khử trùng lặp tự động.
           </p>
         </div>
 
@@ -159,11 +163,11 @@ export default function JobsPage() {
         {/* Row 1: Search Input */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <div className="search-box-wrapper">
-            <Search size={18} className="search-icon" />
+            <Search size={18} className="search-icon" color="#9ca3af" />
             <input
               type="text"
               className="search-input"
-              placeholder="Tìm theo tiêu đề vị trí, tên công ty, kỹ năng (ví dụ: Python, React, Data Engineer, FPT...)"
+              placeholder="Tìm kiếm vị trí tuyển dụng, công ty, kỹ năng (ví dụ: Python, React, Data, FPT...)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -190,7 +194,7 @@ export default function JobsPage() {
         >
           {/* Source Filter */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475467', marginBottom: '0.35rem' }}>
               Nguồn tuyển dụng
             </label>
             <select
@@ -213,7 +217,7 @@ export default function JobsPage() {
 
           {/* Location Filter */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475467', marginBottom: '0.35rem' }}>
               Khu vực / Tỉnh thành
             </label>
             <select
@@ -243,7 +247,7 @@ export default function JobsPage() {
 
           {/* Level Filter */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475467', marginBottom: '0.35rem' }}>
               Cấp bậc vị trí
             </label>
             <select
@@ -265,7 +269,7 @@ export default function JobsPage() {
 
           {/* Experience Filter */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475467', marginBottom: '0.35rem' }}>
               Yêu cầu kinh nghiệm
             </label>
             <select
@@ -288,7 +292,7 @@ export default function JobsPage() {
 
           {/* Sort By */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475467', marginBottom: '0.35rem' }}>
               Sắp xếp theo
             </label>
             <select
@@ -324,16 +328,16 @@ export default function JobsPage() {
               style={{
                 height: '240px',
                 padding: '1.5rem',
-                opacity: 0.5,
+                opacity: 0.6,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
               }}
             >
-              <div style={{ height: '24px', width: '40%', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }} />
-              <div style={{ height: '40px', width: '90%', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }} />
-              <div style={{ height: '20px', width: '60%', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }} />
-              <div style={{ height: '30px', width: '100%', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }} />
+              <div style={{ height: '24px', width: '40%', background: '#e2e8f0', borderRadius: '4px' }} />
+              <div style={{ height: '40px', width: '90%', background: '#e2e8f0', borderRadius: '4px' }} />
+              <div style={{ height: '20px', width: '60%', background: '#e2e8f0', borderRadius: '4px' }} />
+              <div style={{ height: '30px', width: '100%', background: '#e2e8f0', borderRadius: '4px' }} />
             </div>
           ))}
         </div>
@@ -354,16 +358,16 @@ export default function JobsPage() {
               width: '64px',
               height: '64px',
               borderRadius: '50%',
-              background: 'rgba(255,255,255,0.05)',
+              background: '#fff7ed',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Search size={28} color="var(--text-muted)" />
+            <Search size={28} color="#ff6b00" />
           </div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Không tìm thấy việc làm phù hợp</h3>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '480px', fontSize: '0.9rem' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>Không tìm thấy việc làm phù hợp</h3>
+          <p style={{ color: '#64748b', maxWidth: '480px', fontSize: '0.9rem' }}>
             Không có tin tuyển dụng nào thỏa mãn tiêu chí tìm kiếm hiện tại. Bạn hãy thử bỏ bớt điều kiện lọc hoặc tìm kiếm bằng từ khóa ngắn hơn.
           </p>
           <button onClick={handleResetFilters} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
@@ -401,7 +405,7 @@ export default function JobsPage() {
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                       {job.posted_date || 'Mới cập nhật'}
                     </span>
                   </div>
@@ -413,13 +417,13 @@ export default function JobsPage() {
                         src={job.company_logo}
                         alt={job.company_name}
                         style={{
-                          width: '44px',
-                          height: '44px',
+                          width: '46px',
+                          height: '46px',
                           borderRadius: '8px',
                           objectFit: 'contain',
                           background: 'white',
-                          padding: '2px',
-                          border: '1px solid rgba(255,255,255,0.1)',
+                          padding: '3px',
+                          border: '1px solid #e2e8f0',
                           flexShrink: 0,
                         }}
                         onError={(e) => {
@@ -429,17 +433,18 @@ export default function JobsPage() {
                     ) : (
                       <div
                         style={{
-                          width: '44px',
-                          height: '44px',
+                          width: '46px',
+                          height: '46px',
                           borderRadius: '8px',
                           background: 'var(--accent-gradient)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '1.1rem',
+                          fontSize: '1.15rem',
                           fontWeight: 700,
                           color: 'white',
                           flexShrink: 0,
+                          boxShadow: '0 2px 8px rgba(255,107,0,0.2)',
                         }}
                       >
                         {job.company_name?.charAt(0)?.toUpperCase() || 'J'}
@@ -453,7 +458,7 @@ export default function JobsPage() {
                       <p
                         style={{
                           fontSize: '0.85rem',
-                          color: 'var(--text-secondary)',
+                          color: '#64748b',
                           marginTop: '0.2rem',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -468,26 +473,26 @@ export default function JobsPage() {
                 </div>
 
                 {/* Salary Highlight */}
-                <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ padding: '0.5rem 0.75rem', background: '#fff7ed', borderRadius: '6px', border: '1px solid #ffedd5' }}>
                   <span className="job-salary-tag">
                     💰 {job.salary || 'Thương lượng'}
                   </span>
                 </div>
 
                 {/* Meta details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.825rem' }}>
                   <div className="job-meta-item">
-                    <MapPin size={14} color="#38bdf8" />
+                    <MapPin size={14} color="#ff6b00" />
                     <span>{job.location_short || 'Chưa rõ địa điểm'}</span>
                   </div>
                   <div className="job-meta-item">
-                    <Briefcase size={14} color="#a855f7" />
+                    <Briefcase size={14} color="#64748b" />
                     <span>{job.experience || 'Không yêu cầu KN'}</span>
                     {job.level && <span>• {job.level}</span>}
                   </div>
                   {job.deadline && (
                     <div className="job-meta-item">
-                      <Calendar size={14} color="#f59e0b" />
+                      <Calendar size={14} color="#ea580c" />
                       <span>Hạn nộp: {job.deadline}</span>
                     </div>
                   )}
@@ -503,7 +508,7 @@ export default function JobsPage() {
                     borderTop: '1px solid var(--border-subtle)',
                   }}
                 >
-                  <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
                     Xem chi tiết job &rarr;
                   </span>
                   <button
@@ -512,17 +517,18 @@ export default function JobsPage() {
                       window.open(job.job_url, '_blank', 'noopener,noreferrer');
                     }}
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-muted)',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      color: '#64748b',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '4px',
+                      padding: '5px',
                     }}
                     title="Mở link bài đăng gốc"
                   >
-                    <ExternalLink size={16} />
+                    <ExternalLink size={15} />
                   </button>
                 </div>
               </div>
@@ -548,7 +554,7 @@ export default function JobsPage() {
               const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
               return (
                 <React.Fragment key={p}>
-                  {showEllipsis && <span style={{ color: 'var(--text-muted)', padding: '0 4px' }}>...</span>}
+                  {showEllipsis && <span style={{ color: '#94a3b8', padding: '0 4px' }}>...</span>}
                   <button
                     className={`pagination-btn ${page === p ? 'active' : ''}`}
                     onClick={() => setPage(p)}
@@ -567,7 +573,7 @@ export default function JobsPage() {
             <ChevronRight size={16} />
           </button>
 
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '1rem' }}>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '1rem', fontWeight: 500 }}>
             Trang {page} / {totalPages}
           </span>
         </div>

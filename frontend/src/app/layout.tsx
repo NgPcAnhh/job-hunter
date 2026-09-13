@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import HeaderNav from '@/components/common/HeaderNav';
 import './globals.css';
 
@@ -16,27 +17,32 @@ export default function RootLayout({
     <html lang="vi">
       <body>
         <div className="layout-wrapper">
-          <header style={{ borderBottom: '1px solid var(--border-subtle)', padding: '1rem 0' }}>
+          <header className="site-header" style={{ padding: '0.85rem 0' }}>
             <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
-                  width: '36px',
-                  height: '36px',
+                  width: '38px',
+                  height: '38px',
                   borderRadius: '10px',
                   background: 'var(--accent-gradient)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 'bold',
-                  fontSize: '1.2rem'
+                  fontSize: '1.2rem',
+                  boxShadow: '0 4px 12px rgba(255, 107, 0, 0.25)',
+                  color: 'white',
                 }}>
                   🎯
                 </div>
                 <div>
-                  <h1 style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Jobs Hunter</h1>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Serverless Market Analytics</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <h1 style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#111827' }}>Jobs Hunter</h1>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: '4px' }}>SIMPLIZE</span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Phân tích & Quản lý việc làm IT</p>
                 </div>
-              </div>
+              </Link>
               <HeaderNav />
             </div>
           </header>
