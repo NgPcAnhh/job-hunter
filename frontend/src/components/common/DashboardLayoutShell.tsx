@@ -1,0 +1,55 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import AppSidebar from '@/components/common/AppSidebar';
+import AppHeader from '@/components/common/AppHeader';
+
+export default function DashboardLayoutShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+
+  // Read initial collapsed state from localStorage if available
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('jobs_hunter_sidebar_collapsed');
+      if (saved !== null) {
+        setCollapsed(JSON.parse(saved));
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleToggle = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('jobs_hunter_sidebar_collapsed', JSON.stringify(next));
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+      {/* 1. Left Collapsible Sidebar */}
+      <AppSidebar collapsed={collapsed} onToggle={handleToggle} />
+
+      {/* 2. Main Content Area */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Top Header */}
+        <AppHeader sidebarCollapsed={collapsed} onToggleSidebar={handleToggle} />
+
+        {/* Content Container */}
+        <main style={{ flex: 1, padding: '1.75rem 2rem', maxWidth: '1440px', width: '100%', margin: '0 auto' }}>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
