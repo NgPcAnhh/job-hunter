@@ -657,7 +657,10 @@ def crawl(
             logger.info(f"Đã hoàn thành cào đến trang #{limit_num}. Dừng crawl.")
             break
 
-        list_url = BASE_PAGINATION_URL.format(page=current_page)
+        if current_page == 1:
+            list_url = "https://timviec365.vn/viec-lam-it-phan-mem-c13v0"
+        else:
+            list_url = BASE_PAGINATION_URL.format(page=current_page)
         logger.info(f"\n📄 Đang tải trang danh sách #{current_page}: {list_url}")
 
         res = safe_request(session, list_url, max_retries=3, referer=last_referer)

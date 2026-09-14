@@ -98,19 +98,31 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                 if not is_challenge:
                     break
 
-                # Tìm kiếm iframe Turnstile từ DOM cha để lấy tọa độ viewport chuẩn xác
+                # 1. Thử click trực tiếp qua frame locator bên trong Turnstile iframe
                 try:
-                    iframe_elem = page.locator('iframe[src*="challenges.cloudflare.com"]')
+                    for frame in page.frames:
+                        if "challenges.cloudflare.com" in frame.url or "turnstile" in frame.url:
+                            for sel in ['input[type="checkbox"]', '.ctp-checkbox-label', '#challenge-stage', 'body']:
+                                loc = frame.locator(sel)
+                                if loc.count() > 0:
+                                    loc.first.click(timeout=1500, force=True)
+                                    break
+                except Exception:
+                    pass
+
+                # 2. Thử click theo tọa độ phần cứng của iframe
+                try:
+                    iframe_elem = page.locator('iframe[src*="challenges.cloudflare.com"], iframe[title*="Cloudflare"], iframe[title*="widget"]')
                     if iframe_elem.count() > 0 and iframe_elem.first.is_visible():
                         box = iframe_elem.first.bounding_box()
                         if box:
-                            click_x = box["x"] + 28
+                            click_x = box["x"] + min(box["width"] * 0.15, 30)
                             click_y = box["y"] + box["height"] / 2
                             # Di chuyển chuột tự nhiên và click phần cứng
                             page.mouse.move(box["x"] + 5, box["y"] + 5)
-                            page.wait_for_timeout(200)
+                            page.wait_for_timeout(100)
                             page.mouse.move(click_x, click_y)
-                            page.wait_for_timeout(150)
+                            page.wait_for_timeout(100)
                             page.mouse.down()
                             page.wait_for_timeout(100)
                             page.mouse.up()
