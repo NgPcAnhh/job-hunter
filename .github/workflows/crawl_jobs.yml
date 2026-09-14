@@ -63,6 +63,12 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
+      - name: 🛡️ Setup Cloudflare WARP (Bypass Datacenter IP Restrictions)
+        uses: fscarmen/warp-on-actions@main
+        with:
+          stack: dual
+          mode: wireguard
+
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -123,7 +129,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
         run: |
-          python -c "
+          python - << 'EOF'
           import os
           from crawler.db import get_db_connection, sanitize_table_name
 
@@ -131,7 +137,10 @@ jobs:
           if not summary_file:
               exit(0)
 
-          sources = ['careerlink', 'careerviet', 'topcv', 'vieclam24h', 'vietnamworks', 'jobsgo', 'joboko']
+          sources = [
+              'careerlink', 'careerviet', 'topcv', 'vieclam24h',
+              'vietnamworks', 'jobsgo', 'joboko', 'timviec365', 'topdev', 'job123'
+          ]
           
           with open(summary_file, 'a', encoding='utf-8') as f:
               f.write('## 📊 Báo Cáo Kết Quả Pipeline Crawl & Sync Supabase\n\n')
@@ -147,9 +156,9 @@ jobs:
                               try:
                                   cur.execute(f'SELECT COUNT(*) FROM {tbl};')
                                   cnt = cur.fetchone()[0]
-                                  f.write(f'| `jobs_{s}` | **{cnt}** |\n')
+                                  f.write(f'| `{tbl}` | **{cnt}** |\n')
                               except Exception:
-                                  f.write(f'| `jobs_{s}` | *Chưa tạo* |\n')
+                                  f.write(f'| `{tbl}` | *Chưa tạo* |\n')
                           
                           # Thống kê bảng tổng
                           cur.execute('SELECT COUNT(*) FROM all_jobs_unified;')
@@ -157,7 +166,7 @@ jobs:
                           f.write(f'| **🌟 `all_jobs_unified` (Bảng Tổng)** | **{total_unified}** |\n')
               except Exception as e:
                   f.write(f'\n> ⚠️ Không thể truy vấn thống kê: {e}\n')
-          "
+          EOF
 
       - name: "📱 Optional: Notify Telegram on Finish"
         if: always()

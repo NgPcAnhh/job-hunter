@@ -99,13 +99,15 @@ jobs:
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
         shell: bash
         run: |
-          python -c "
+          python - << 'EOF'
           import os
           from crawler.db import get_db_connection
 
           summary_file = os.getenv('GITHUB_STEP_SUMMARY')
           if not summary_file:
               exit(0)
+
+          sources = ['topcv', 'jobsgo', 'vieclam24h', 'timviec365']
 
           with open(summary_file, 'a', encoding='utf-8') as f:
               f.write('## 📊 Báo Cáo Kết Quả TopCV & JobsGO (Chạy trên Local Runner)\n\n')
@@ -114,18 +116,19 @@ jobs:
               try:
                   with get_db_connection() as conn:
                       with conn.cursor() as cur:
-                          for s in ['topcv', 'jobsgo']:
+                          for s in sources:
+                              tbl = f'jobs_{s}'
                               try:
-                                  cur.execute(f'SELECT COUNT(*) FROM jobs_{s};')
+                                  cur.execute(f'SELECT COUNT(*) FROM {tbl};')
                                   cnt = cur.fetchone()[0]
-                                  f.write(f'| `jobs_{s}` | **{cnt}** |\n')
+                                  f.write(f'| `{tbl}` | **{cnt}** |\n')
                               except Exception:
-                                  f.write(f'| `jobs_{s}` | *Chưa tạo* |\n')
+                                  f.write(f'| `{tbl}` | *Chưa tạo* |\n')
                           cur.execute('SELECT COUNT(*) FROM all_jobs_unified;')
                           f.write(f'| **🌟 `all_jobs_unified` (Bảng Tổng)** | **{cur.fetchone()[0]}** |\n')
               except Exception as e:
                   f.write(f'\n> ⚠️ Lỗi truy vấn: {e}\n')
-          "
+          EOF
 
       - name: 📱 Optional: Notify Telegram on Finish
         if: always()
