@@ -365,6 +365,16 @@ def extract_job_urls_from_page(soup: BeautifulSoup) -> List[str]:
         if job_url and job_url not in job_urls:
             job_urls.append(job_url)
 
+    # Fallback dự phòng: Quét trực tiếp các thẻ a chứa link bài tuyển dụng dạng /tim-viec-lam/.../<id>
+    if not job_urls:
+        for a in soup.select('a[href*="/tim-viec-lam/"]'):
+            href = a.get("href", "").strip()
+            # Link bài đăng chi tiết có cấu trúc /tim-viec-lam/<slug>/<id>
+            if re.search(r"/\d+(\?.*)?$", href):
+                full_url = urljoin("https://www.careerlink.vn", href)
+                if full_url not in job_urls:
+                    job_urls.append(full_url)
+
     return job_urls
 
 
