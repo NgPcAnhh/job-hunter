@@ -101,34 +101,18 @@ get_random_headers = get_request_headers
 
 
 def fetch_list_page_with_playwright(url: str, session: Optional[Any] = None) -> Optional[str]:
-    """Fallback bằng Playwright Headless Browser nếu HTTP request trả về 0 kết quả do Cloud/WAF challenge."""
+    """Fallback bằng Stealth Browser (Subprocess độc lập) để an toàn 100% trong ThreadPoolExecutor đa luồng."""
     try:
-        from playwright.sync_api import sync_playwright
-        logger.info(f"🌐 [Playwright] Đang tải trang bằng trình duyệt: {url}")
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                locale="vi-VN",
-            )
-            page = context.new_page()
-            page.goto(url, timeout=35000, wait_until="domcontentloaded")
-            try:
-                page.wait_for_selector(".job-item, a[href*='/tim-viec-lam/'], h1.job-title", timeout=8000)
-            except Exception:
-                pass
-            html = page.content()
-
-            # Đồng bộ cookies thu được từ trình duyệt sang HTTP session
-            if session is not None and hasattr(session, "cookies"):
-                pw_cookies = context.cookies()
-                for c in pw_cookies:
-                    session.cookies.set(c['name'], c['value'], domain=c.get('domain', '.careerlink.vn'))
-
-            browser.close()
-            return html
+        from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+        logger.info(f"🌐 [Subprocess Browser] Đang tải trang bằng trình duyệt: {url}")
+        res = fetch_with_stealth_browser(url, timeout_sec=35)
+        if res and res.status_code == 200 and len(res.text) > 1000:
+            if session is not None and res.cookies:
+                sync_cookies_to_session(session, res.cookies)
+            return res.text
+        return None
     except Exception as e:
-        logger.warning(f"⚠️ Playwright gặp lỗi: {e}")
+        logger.warning(f"⚠️ Browser Fallback gặp lỗi: {e}")
         return None
 
 

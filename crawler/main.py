@@ -106,11 +106,26 @@ def run_pipeline(
         "joboko": ("crawler.crawl.joboko", "crawl"),
         "vietnamworks": ("crawler.crawl.vietnamworks", "crawl"),
         "job123": ("crawler.crawl.job123", "crawl"),
+        "123job": ("crawler.crawl.job123", "crawl"),
         "timviec365": ("crawler.crawl.365timviec", "crawl"),
+        "365timviec": ("crawler.crawl.365timviec", "crawl"),
         "topdev": ("crawler.crawl.topdev", "crawl"),
     }
 
-    targets = sites if sites else list(registered_spiders.keys())
+    canonical_all_sites = [
+        "vietnamworks",
+        "vieclam24h",
+        "careerlink",
+        "careerviet",
+        "joboko",
+        "job123",
+        "timviec365",
+        "topdev",
+        "topcv",
+        "jobsgo",
+    ]
+
+    targets = sites if sites else canonical_all_sites
     valid_spiders = [(s, registered_spiders[s]) for s in targets if s in registered_spiders]
     results_summary = {}
 
