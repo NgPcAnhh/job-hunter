@@ -44,4 +44,15 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           echo "🚀 Bắt đầu kiểm thử vượt Cloudflare cho TopCV & JobsGO trên Cloud..."
-          xvfb-run -a python crawler/main.py --site topcv,jobsgo --pages 1 --jobs-per-page 2
+          set -o pipefail
+          xvfb-run -a python crawler/main.py --site topcv,jobsgo --pages 1 --jobs-per-page 2 2>&1 | tee test_run.log
+
+      - name: 📋 Render Test Log to Summary
+        if: always()
+        run: |
+          echo "## 📋 Kết Quả Test TopCV & JobsGO Trên Cloud" >> $GITHUB_STEP_SUMMARY
+          if [ -f test_run.log ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 200 test_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

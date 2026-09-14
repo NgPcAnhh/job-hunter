@@ -1,8 +1,7 @@
 """
-Browser Solver Module (Subprocess-Isolated Playwright + Stealth)
+Browser Solver Module (Subprocess-Isolated Playwright + Stealth + Hardware Mouse Turnstile Clicker)
 Tự động giải quyết Cloudflare Turnstile / Managed Challenge trên môi trường Cloud (GitHub Actions IP).
-Sử dụng kiến trúc Subprocess để đảm bảo cách ly tuyệt đối, chống xung đột luồng (Thread-Safe trong ThreadPoolExecutor),
-và hỗ trợ chế độ Xvfb Virtual Headful trên Ubuntu runner.
+Sử dụng kiến trúc Subprocess để cách ly hoàn toàn tiến trình trình duyệt và tránh xung đột luồng.
 """
 
 import os
@@ -12,6 +11,7 @@ import logging
 import platform
 import tempfile
 import subprocess
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class BrowserResponse:
         return json.loads(self.text)
 
 
-def _worker_fetch(url: str, output_path: str, timeout_sec: int = 35):
+def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
     """Thực thi bên trong subprocess độc lập để cách ly Playwright và Greenlet."""
     from playwright.sync_api import sync_playwright
 
@@ -68,12 +68,12 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 35):
             page = context.new_page()
 
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_sec * 1000)
-            page.wait_for_timeout(2000)
+            page.wait_for_timeout(2500)
 
             # Xử lý Cloudflare Turnstile Challenge
             for attempt in range(8):
                 title = page.title().lower()
-                content_preview = page.content()[:2500].lower()
+                content_preview = page.content()[:3000].lower()
 
                 is_challenge = (
                     "just a moment..." in title
@@ -84,18 +84,22 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 35):
                 if not is_challenge:
                     break
 
-                # Tìm kiếm iframe Turnstile và click chuột phần cứng
+                # Tìm kiếm iframe Turnstile từ DOM cha để lấy tọa độ viewport chuẩn xác
                 try:
-                    for f in page.frames:
-                        if "challenges.cloudflare.com" in f.url:
-                            body = f.locator("body")
-                            if body.count() > 0:
-                                box = body.bounding_box()
-                                if box:
-                                    click_x = box["x"] + 30
-                                    click_y = box["y"] + box["height"] / 2
-                                    page.mouse.click(click_x, click_y)
-                                    break
+                    iframe_elem = page.locator('iframe[src*="challenges.cloudflare.com"]')
+                    if iframe_elem.count() > 0 and iframe_elem.first.is_visible():
+                        box = iframe_elem.first.bounding_box()
+                        if box:
+                            click_x = box["x"] + 28
+                            click_y = box["y"] + box["height"] / 2
+                            # Di chuyển chuột tự nhiên và click phần cứng
+                            page.mouse.move(box["x"] + 5, box["y"] + 5)
+                            page.wait_for_timeout(200)
+                            page.mouse.move(click_x, click_y)
+                            page.wait_for_timeout(150)
+                            page.mouse.down()
+                            page.wait_for_timeout(100)
+                            page.mouse.up()
                 except Exception:
                     pass
 
@@ -128,7 +132,7 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 35):
             pass
 
 
-def fetch_with_stealth_browser(url: str, timeout_sec: int = 35) -> Optional[BrowserResponse]:
+def fetch_with_stealth_browser(url: str, timeout_sec: int = 40) -> Optional[BrowserResponse]:
     """
     Hàm gọi Stealth Browser thông qua Subprocess độc lập:
     - Cách ly 100% Greenlet giữa các luồng trong ThreadPoolExecutor (Tránh triệt để Deadlock).
@@ -140,6 +144,10 @@ def fetch_with_stealth_browser(url: str, timeout_sec: int = 35) -> Optional[Brow
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             tmp_file = f.name
 
+        project_root = Path(__file__).resolve().parent.parent.parent
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(project_root)
+
         cmd = [
             sys.executable,
             "-m",
@@ -150,7 +158,14 @@ def fetch_with_stealth_browser(url: str, timeout_sec: int = 35) -> Optional[Brow
         ]
 
         logger.info(f"🌐 [Subprocess Browser] Đang khởi chạy browser độc lập để cào: {url}")
-        proc = subprocess.run(cmd, timeout=timeout_sec + 15, capture_output=True, text=True)
+        proc = subprocess.run(
+            cmd,
+            timeout=timeout_sec + 15,
+            capture_output=True,
+            text=True,
+            cwd=str(project_root),
+            env=env,
+        )
 
         if not os.path.exists(tmp_file) or os.path.getsize(tmp_file) == 0:
             logger.warning(f"⚠️ [Subprocess Browser] Subprocess không tạo được dữ liệu đầu ra: {proc.stderr[:300]}")
@@ -211,7 +226,7 @@ if __name__ == "__main__":
     if len(sys.argv) >= 3:
         target_url = sys.argv[1]
         out_json = sys.argv[2]
-        t_sec = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 35
+        t_sec = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 40
         _worker_fetch(target_url, out_json, timeout_sec=t_sec)
     else:
         print("Usage: python -m crawler.utils.browser_solver <url> <output_json_path> [timeout_sec]")
