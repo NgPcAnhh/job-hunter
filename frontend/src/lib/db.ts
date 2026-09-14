@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 const connectionString =
   process.env.DATABASE_POOLER_URL ||
   process.env.DATABASE_URL ||
-  'postgresql://postgres:phucanhnguyen04082004@db.xltonipyxbdivoljvemc.supabase.co:5432/postgres';
+  'postgresql://postgres.xltonipyxbdivoljvemc:phucanhnguyen04082004@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres';
 
 declare global {
   // eslint-disable-next-line no-var

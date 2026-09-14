@@ -24,11 +24,68 @@ PRIMARY_DATABASE_URL = os.getenv(
 )
 
 # Fallback pooler URL specifically for environments where db.<ref>.supabase.co
-# cannot resolve IPv6 addresses (common on Windows local development)
+# cannot resolve IPv6 addresses (common on Windows local development and GitHub Actions runners)
 FALLBACK_POOLER_URL = os.getenv(
     "DATABASE_POOLER_URL",
     "postgresql://postgres.xltonipyxbdivoljvemc:phucanhnguyen04082004@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 )
+
+
+def derive_pooler_url(direct_url: Optional[str]) -> Optional[str]:
+    """
+    Auto-converts a direct Supabase URL (db.<ref>.supabase.co:5432) to Supavisor Pooler URL.
+    Direct Supabase URLs are IPv6-only on Supabase Free Tier, causing 'Network is unreachable'
+    on GitHub Actions Ubuntu runners and IPv4-only environments.
+    """
+    if not direct_url:
+        return None
+    # Matches: postgresql://[user]:[pass]@db.[ref].supabase.co:[port]/[dbname]
+    m = re.match(
+        r"^(postgres(?:ql)?:\/\/)([^:]+):([^@]+)@db\.([^\.]+)\.supabase\.co(?::\d+)?\/(.*)$",
+        direct_url.strip()
+    )
+    if m:
+        protocol, user, password, ref, db_name = m.groups()
+        # In Supabase pooler, username is formatted as <user>.<ref>
+        pooler_user = f"{user}.{ref}" if "." not in user else user
+        return f"{protocol}{pooler_user}:{password}@aws-0-ap-southeast-1.pooler.supabase.com:5432/{db_name}"
+    return None
+
+
+def get_candidate_db_urls() -> List[str]:
+    """
+    Returns an ordered list of connection URLs to attempt, prioritizing IPv4-compatible
+    Pooler URLs first to prevent 'Network is unreachable' failures on CI runners.
+    """
+    candidates = []
+
+    def _add(url: Optional[str]):
+        if url and url.strip() and url.strip() not in candidates:
+            candidates.append(url.strip())
+
+    env_pooler = os.getenv("DATABASE_POOLER_URL")
+    env_primary = os.getenv("DATABASE_URL")
+
+    # 1. Explicit pooler URL from environment
+    _add(env_pooler)
+
+    # 2. If PRIMARY DATABASE_URL is already a pooler URL, use it directly
+    if env_primary and "pooler.supabase.com" in env_primary:
+        _add(env_primary)
+
+    # 3. If PRIMARY DATABASE_URL is direct, derive the pooler URL first
+    if env_primary and "db." in env_primary and "supabase.co" in env_primary:
+        _add(derive_pooler_url(env_primary))
+
+    # 4. Fallback pooler URL
+    _add(FALLBACK_POOLER_URL)
+
+    # 5. Direct primary URL (for IPv6-enabled networks)
+    _add(env_primary)
+    _add(PRIMARY_DATABASE_URL)
+
+    return candidates
+
 
 # Cache initialized tables in process memory to avoid redundant DDL statements
 _INITIALIZED_TABLES = set()
@@ -131,17 +188,28 @@ def get_upsert_jobs_sql(table_name: str) -> str:
 def get_db_connection() -> psycopg2.extensions.connection:
     """
     Establish a connection to PostgreSQL/Supabase.
-    Automatically handles fallback from IPv6-only direct host to IPv4 pooler if needed.
+    Automatically cycles through candidate URLs (Pooler, derived pooler, direct host)
+    to guarantee successful connectivity regardless of IPv6/IPv4 network environment.
     """
-    try:
-        conn = psycopg2.connect(PRIMARY_DATABASE_URL, connect_timeout=5)
-        return conn
-    except Exception as err:
-        err_msg = str(err).lower()
-        if "could not translate host name" in err_msg or "getaddrinfo failed" in err_msg or "timeout" in err_msg:
-            logger.info("Direct IPv6 Supabase host unreachable, connecting via IPv4 Pooler...")
-            return psycopg2.connect(FALLBACK_POOLER_URL, connect_timeout=10)
-        raise
+    candidate_urls = get_candidate_db_urls()
+    last_err: Optional[Exception] = None
+
+    for url in candidate_urls:
+        masked_url = re.sub(r":([^@]+)@", ":***@", url)
+        try:
+            conn = psycopg2.connect(url, connect_timeout=10)
+            return conn
+        except Exception as err:
+            last_err = err
+            logger.warning(
+                f"Supabase connection attempt to [{masked_url}] failed: {err}. "
+                f"Trying next connection candidate..."
+            )
+
+    logger.error("❌ All candidate Supabase database connection attempts failed.")
+    if last_err:
+        raise last_err
+    raise RuntimeError("No valid Supabase database URL configured.")
 
 
 def ensure_table_exists(table_name: str = "all_jobs_unified") -> None:
