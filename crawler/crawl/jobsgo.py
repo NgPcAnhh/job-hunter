@@ -170,6 +170,13 @@ def safe_request(
 
             # Kiểm tra Bot Challenge / Captcha
             if check_is_captcha_or_challenge(response):
+                if attempt >= 2:
+                    logger.warning(
+                        f"🛡️  [Anti-Ban / Captcha Blocked] Máy chủ JobsGO kích hoạt Bot Challenge trên IP Datacenter. "
+                        f"Nếu chạy trên GitHub Actions, bạn có thể thêm secret HTTP_PROXY (Residential Proxy VN). "
+                        f"Tạm dừng cào JobsGO để pipeline tiếp tục với các spider khác."
+                    )
+                    return None
                 logger.warning(
                     f"⚠️  [Anti-Ban] Phát hiện Bot Challenge/Captcha tại lần thử #{attempt}/{max_retries}. "
                     f"Tự động tạm dừng {backoff:.1f}s để giải phóng cờ IP..."

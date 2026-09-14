@@ -459,7 +459,7 @@ def create_session(proxy: Optional[str] = None) -> Any:
 
 def crawl(
     max_clicks: Union[int, str, None] = "max",
-    max_jobs_per_page: Optional[int] = None,
+    max_jobs_per_page: Union[int, str, None] = "max",
     min_delay: float = 1.2,
     max_delay: float = 2.5,
     batch_cooldown_every: int = 10,
@@ -517,6 +517,15 @@ def crawl(
     current_url: Optional[str] = START_URL
     last_referer: Optional[str] = None
 
+    # Phân giải tham số max_jobs_per_page
+    limit_jobs_per_page: Optional[int] = None
+    if isinstance(max_jobs_per_page, int):
+        limit_jobs_per_page = max_jobs_per_page
+    elif isinstance(max_jobs_per_page, str) and max_jobs_per_page.strip().isdigit():
+        limit_jobs_per_page = int(max_jobs_per_page.strip())
+    else:
+        limit_jobs_per_page = None
+
     while current_url:
         logger.info(f"\n📄 [Đợt #{batch_index}] Đang tải danh sách: {current_url}")
         res = safe_request(session, current_url, max_retries=3, referer=last_referer)
@@ -538,8 +547,8 @@ def crawl(
         logger.info(f"Tìm thấy {len(job_urls)} bài tuyển dụng tại đợt #{batch_index}.")
         cards_metadata = get_job_cards_metadata(res.text, base_url=BASE_DOMAIN)
 
-        if max_jobs_per_page:
-            job_urls = job_urls[:max_jobs_per_page]
+        if limit_jobs_per_page:
+            job_urls = job_urls[:limit_jobs_per_page]
 
         for idx, job_url in enumerate(job_urls, start=1):
             if job_url in visited_urls:

@@ -229,8 +229,28 @@ def safe_request(
                 headers = get_random_headers(referer=referer or BASE_DOMAIN)
                 continue
 
-            # Nếu gặp lỗi server tạm thời 500, 502, 503, 504 hoặc 403
-            if response.status_code in [403, 500, 502, 503, 504]:
+            # Nếu gặp lỗi HTTP 403 (Cloudflare WAF chặn IP Datacenter)
+            if response.status_code == 403:
+                if attempt >= 2:
+                    logger.warning(
+                        f"🛡️  [Cloudflare WAF Blocked HTTP 403] IP Datacenter bị TopCV chặn. "
+                        f"Nếu chạy trên GitHub Actions, bạn có thể thêm secret HTTP_PROXY (Residential Proxy VN). "
+                        f"Tạm dừng cào TopCV để pipeline tiếp tục với các spider khác."
+                    )
+                    return None
+                logger.warning(
+                    f"⚠️  [HTTP 403] Sự cố tạm thời tại {url}. "
+                    f"Lần #{attempt}/{max_retries}. Tạm dừng {backoff:.1f}s..."
+                )
+                time.sleep(backoff)
+                backoff *= 2
+                if hasattr(session, "cookies"):
+                    session.cookies.clear()
+                headers = get_random_headers(referer=referer or BASE_DOMAIN)
+                continue
+
+            # Nếu gặp lỗi server tạm thời 500, 502, 503, 504
+            if response.status_code in [500, 502, 503, 504]:
                 logger.warning(
                     f"⚠️  [HTTP {response.status_code}] Sự cố tạm thời tại {url}. "
                     f"Lần #{attempt}/{max_retries}. Tạm dừng {backoff:.1f}s..."
