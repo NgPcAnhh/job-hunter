@@ -36,7 +36,6 @@ class BrowserResponse:
 def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
     """Thực thi bên trong subprocess độc lập để cách ly Playwright và Greenlet."""
     from playwright.sync_api import sync_playwright
-    from playwright_stealth.stealth import Stealth
 
     is_linux = platform.system().lower() == "linux"
     has_display = bool(os.getenv("DISPLAY"))
@@ -55,7 +54,6 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
         "--disable-infobars",
         "--disable-dev-shm-usage",
         "--window-size=1920,1080",
-        "--disable-features=IsolateOrigins,site-per-process",
     ]
 
     try:
@@ -67,29 +65,15 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                 locale="vi-VN",
                 timezone_id="Asia/Ho_Chi_Minh",
             )
-            # Áp dụng Stealth toàn diện để xóa bỏ triệt để navigator.webdriver và bot flags
-            try:
-                Stealth().apply_stealth_sync(context)
-            except Exception as se:
-                print(f"[Stealth Warning] context stealth: {se}", file=sys.stderr)
-
             page = context.new_page()
-            try:
-                Stealth().apply_stealth_sync(page)
-            except Exception as se:
-                print(f"[Stealth Warning] page stealth: {se}", file=sys.stderr)
 
-            print(f"[Subprocess] Loading URL: {url}", file=sys.stderr)
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_sec * 1000)
             page.wait_for_timeout(2500)
 
             # Xử lý Cloudflare Turnstile Challenge
-            for attempt in range(12):
+            for attempt in range(8):
                 title = page.title().lower()
                 content_preview = page.content()[:3000].lower()
-
-                current_cookies = context.cookies()
-                has_clearance = any(c.get("name") == "cf_clearance" for c in current_cookies)
 
                 is_challenge = (
                     "just a moment..." in title
@@ -97,26 +81,18 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                     or "cloudflare" in title
                     or "attention required!" in title
                 )
-
-                if has_clearance and not ("just a moment..." in title):
-                    print(f"[Subprocess] Detected cf_clearance cookie! Challenge passed.", file=sys.stderr)
-                    break
-
                 if not is_challenge:
-                    print(f"[Subprocess] Target page loaded successfully (no challenge).", file=sys.stderr)
                     break
 
-                print(f"[Subprocess] Challenge detected (attempt {attempt+1}/12). Title: {page.title()}", file=sys.stderr)
-
-                # 1. Tìm kiếm iframe Turnstile từ DOM cha để lấy tọa độ viewport chuẩn xác
+                # Tìm kiếm iframe Turnstile từ DOM cha để lấy tọa độ viewport chuẩn xác
                 try:
-                    iframe_elem = page.locator('iframe[src*="challenges.cloudflare.com"], iframe[title*="Cloudflare"], iframe[src*="turnstile"]')
+                    iframe_elem = page.locator('iframe[src*="challenges.cloudflare.com"]')
                     if iframe_elem.count() > 0 and iframe_elem.first.is_visible():
                         box = iframe_elem.first.bounding_box()
                         if box:
                             click_x = box["x"] + 28
                             click_y = box["y"] + box["height"] / 2
-                            print(f"[Subprocess] Mouse click Turnstile at ({click_x:.1f}, {click_y:.1f})", file=sys.stderr)
+                            # Di chuyển chuột tự nhiên và click phần cứng
                             page.mouse.move(box["x"] + 5, box["y"] + 5)
                             page.wait_for_timeout(200)
                             page.mouse.move(click_x, click_y)
@@ -124,19 +100,10 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                             page.mouse.down()
                             page.wait_for_timeout(100)
                             page.mouse.up()
-                except Exception as click_err:
-                    print(f"[Subprocess] Click error: {click_err}", file=sys.stderr)
-
-                # 2. Thử tương tác trực tiếp qua frame_locator nếu khả dụng
-                try:
-                    frame_loc = page.frame_locator('iframe[src*="challenges.cloudflare.com"]')
-                    cb = frame_loc.locator('input[type="checkbox"], #challenge-stage, .ctp-checkbox-label')
-                    if cb.count() > 0 and cb.first.is_visible():
-                        cb.first.click(timeout=1500)
                 except Exception:
                     pass
 
-                page.wait_for_timeout(2500)
+                page.wait_for_timeout(2000)
 
             final_title = page.title()
             final_html = page.content()
@@ -146,10 +113,6 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
             status = 200
             if "just a moment..." in final_title.lower() and len(final_html) < 4000:
                 status = 403
-            elif "sorry, you have been blocked" in final_html.lower() or "access denied" in final_title.lower():
-                status = 403
-
-            print(f"[Subprocess] Done. Status={status}, Title='{final_title[:45]}', Size={len(final_html):,} bytes", file=sys.stderr)
 
             data = {
                 "status": status,
@@ -162,7 +125,6 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                 json.dump(data, out_f, ensure_ascii=False)
 
     except Exception as err:
-        print(f"[Subprocess Exception] {err}", file=sys.stderr)
         try:
             with open(output_path, "w", encoding="utf-8") as out_f:
                 json.dump({"status": 500, "error": str(err), "url": url}, out_f)
@@ -198,17 +160,12 @@ def fetch_with_stealth_browser(url: str, timeout_sec: int = 40) -> Optional[Brow
         logger.info(f"🌐 [Subprocess Browser] Đang khởi chạy browser độc lập để cào: {url}")
         proc = subprocess.run(
             cmd,
-            timeout=timeout_sec + 20,
+            timeout=timeout_sec + 15,
             capture_output=True,
             text=True,
             cwd=str(project_root),
             env=env,
         )
-
-        if proc.stderr:
-            for line in proc.stderr.strip().splitlines():
-                if line.strip():
-                    logger.info(f"🌐 [Browser Subprocess] {line.strip()}")
 
         if not os.path.exists(tmp_file) or os.path.getsize(tmp_file) == 0:
             logger.warning(f"⚠️ [Subprocess Browser] Subprocess không tạo được dữ liệu đầu ra: {proc.stderr[:300]}")

@@ -231,19 +231,7 @@ def safe_request(
                 lower_text = response.text[:2000].lower()
                 is_challenge = "just a moment..." in lower_text or "cf-turnstile" in lower_text or "cloudflare" in lower_text
 
-                # Kích hoạt Stealth Headless Browser giải Turnstile & thu thập Cookie
-                try:
-                    from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
-                    logger.info(f"🌐 [Cloudflare WAF 403] Kích hoạt Stealth Headless Browser tại: {url}...")
-                    b_res = fetch_with_stealth_browser(url)
-                    if b_res and b_res.status_code == 200:
-                        logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Đồng bộ cookie phiên...")
-                        sync_cookies_to_session(session, b_res.cookies)
-                        return b_res
-                except Exception as b_err:
-                    logger.debug(f"Lỗi khi kích hoạt browser solver: {b_err}")
-
-                # Thử nghiệm luân chuyển TLS Fingerprint Profile nếu browser chưa thành công
+                # Thử nghiệm luân chuyển TLS Fingerprint Profile (Safari17 / Chrome124) để vượt Cloudflare
                 if HAS_CURL_CFFI and attempt <= 2:
                     alt_imp = "safari17_0" if attempt == 1 else "chrome124"
                     logger.info(f"🔄 [Anti-WAF] Thử nghiệm chuyển đổi TLS Profile sang '{alt_imp}' tại {url} (Lần #{attempt})...")
@@ -259,6 +247,19 @@ def safe_request(
                             return alt_res
                     except Exception as alt_err:
                         logger.debug(f"Thử profile {alt_imp} thất bại: {alt_err}")
+
+                # Nếu TLS profile không qua được và gặp Cloudflare Challenge -> Gọi Stealth Browser giải Turnstile!
+                if is_challenge or attempt >= 2:
+                    try:
+                        from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+                        logger.info(f"🌐 [Cloudflare WAF 403] Kích hoạt Stealth Headless Browser giải Turnstile tại: {url}...")
+                        b_res = fetch_with_stealth_browser(url)
+                        if b_res and b_res.status_code == 200:
+                            logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Đồng bộ cookie phiên...")
+                            sync_cookies_to_session(session, b_res.cookies)
+                            return b_res
+                    except Exception as b_err:
+                        logger.debug(f"Lỗi khi kích hoạt browser solver: {b_err}")
 
                 if attempt >= 2:
                     logger.warning(
@@ -696,46 +697,16 @@ def crawl_from_sitemap(session: Any, max_jobs: int = 50) -> List[Dict[str, Any]]
         time.sleep(random.uniform(1.2, 2.5))
         logger.info(f"  [{idx}/{len(target_urls)}] [Sitemap] Cào chi tiết: {job_url}")
         res = safe_request(session, job_url, referer="https://www.topcv.vn/")
-        if res and res.status_code == 200:
-            try:
-                job_data = parse_job_detail(res.text, job_url)
-                extracted_jobs.append(job_data)
-                title_disp = (job_data.get("job_title") or "")[:35]
-                comp_disp = (job_data.get("company_name") or "N/A")[:25]
-                logger.info(f"  ✅ [Thành công] {title_disp} | {comp_disp} | Lương: {job_data['salary']}")
-                continue
-            except Exception as e:
-                logger.debug(f"Lỗi bóc tách {job_url}: {e}")
-
-        # Fallback trích xuất tiêu đề sạch từ URL slug sitemap
-        slug_raw = job_url.split("/viec-lam/")[-1].split("/")[0].split(".")[0]
-        slug_title = " ".join([w.capitalize() for w in slug_raw.replace("-", " ").split()])
-        fallback_job = {
-            "job_url": job_url,
-            "source": SOURCE_NAME,
-            "job_title": slug_title or "Kỹ Sư Công Nghệ Thông Tin",
-            "company_name": "Doanh nghiệp tuyển dụng TopCV",
-            "company_url": None,
-            "company_logo": "",
-            "salary": "Thoả thuận",
-            "experience": "Chưa yêu cầu",
-            "level": "Nhân viên",
-            "work_type": "Toàn thời gian",
-            "education": "Đại học / Cao đẳng",
-            "industry": "Công nghệ thông tin",
-            "location_short": "Toàn quốc",
-            "workplace_detail": "Hà Nội / TP.HCM / Toàn quốc",
-            "working_time": "Giờ hành chính",
-            "posted_date": None,
-            "deadline": None,
-            "keyword": "Công nghệ thông tin",
-            "job_description": f"Tuyển dụng vị trí: {slug_title}. Ứng viên xem chi tiết và ứng tuyển trực tiếp tại link: {job_url}",
-            "job_requirements": "Kỹ năng chuyên môn phù hợp theo mô tả tuyển dụng trên hệ thống TopCV.",
-            "benefits": "Lương thưởng cạnh tranh và chế độ đãi ngộ đầy đủ theo chính sách công ty.",
-            "extra_info": {"fallback": True}
-        }
-        extracted_jobs.append(fallback_job)
-        logger.info(f"  ✅ [Sitemap Slug] {slug_title[:35]} | Doanh nghiệp TopCV | Lương: Thoả thuận")
+        if not res or res.status_code != 200:
+            continue
+        try:
+            job_data = parse_job_detail(res.text, job_url)
+            extracted_jobs.append(job_data)
+            title_disp = (job_data.get("job_title") or "")[:35]
+            comp_disp = (job_data.get("company_name") or "N/A")[:25]
+            logger.info(f"  ✅ [Thành công] {title_disp} | {comp_disp} | Lương: {job_data['salary']}")
+        except Exception as e:
+            logger.debug(f"Lỗi bóc tách {job_url}: {e}")
 
     logger.info(f"🎉 [Sitemap Fallback] Thu thập thành công {len(extracted_jobs)} việc làm IT TopCV.")
     return extracted_jobs

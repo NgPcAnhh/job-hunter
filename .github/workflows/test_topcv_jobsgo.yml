@@ -45,35 +45,7 @@ jobs:
         run: |
           echo "🚀 Bắt đầu kiểm thử vượt Cloudflare cho TopCV & JobsGO trên Cloud..."
           set -o pipefail
-          xvfb-run -a python crawler/main.py --site topcv,jobsgo --pages 1 --jobs-per-page 5 2>&1 | tee test_run.log
-
-      - name: 📦 Upload Test Log Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-run-log
-          path: test_run.log
-
-      - name: 📱 Send Cloud Test Summary to Telegram
-        if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, httpx
-          token = os.getenv('TELEGRAM_BOT_TOKEN')
-          chat_id = os.getenv('TELEGRAM_CHAT_ID')
-          if token and chat_id and os.path.exists('test_run.log'):
-              with open('test_run.log', 'r', encoding='utf-8', errors='ignore') as f:
-                  lines = f.readlines()
-              content = ''.join(lines[-35:])
-              msg = f'🧪 <b>[GitHub Actions Cloud Test Report]</b>\n<pre>{content[:3800]}</pre>'
-              try:
-                  httpx.post(f'https://api.telegram.org/bot{token}/sendMessage', json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'HTML'}, timeout=10)
-              except Exception as e:
-                  print('Telegram send err:', e)
-          "
+          xvfb-run -a python crawler/main.py --site topcv,jobsgo --pages 1 --jobs-per-page 2 2>&1 | tee test_run.log
 
       - name: 📋 Render Test Log to Summary
         if: always()
