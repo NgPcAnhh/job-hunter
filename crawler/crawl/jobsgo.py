@@ -167,6 +167,22 @@ def safe_request(
 
             # Kiểm tra Bot Challenge / Captcha
             if check_is_captcha_or_challenge(response):
+                if HAS_CURL_CFFI and attempt <= 2:
+                    alt_imp = "safari17_0" if attempt == 1 else "chrome124"
+                    logger.info(f"🔄 [Anti-WAF] Thử nghiệm chuyển đổi TLS Profile sang '{alt_imp}' tại {url} (Lần #{attempt})...")
+                    try:
+                        resolved_proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+                        kwargs = {"impersonate": alt_imp, "timeout": 25}
+                        if resolved_proxy:
+                            kwargs["proxies"] = {"http": resolved_proxy, "https": resolved_proxy}
+                        alt_session = curl_requests.Session(**kwargs)
+                        alt_res = alt_session.get(url, timeout=25)
+                        if alt_res.status_code == 200 and not check_is_captcha_or_challenge(alt_res):
+                            logger.info(f"🎉 Vượt Cloudflare thành công bằng profile '{alt_imp}'!")
+                            return alt_res
+                    except Exception as alt_err:
+                        logger.debug(f"Thử profile {alt_imp} thất bại: {alt_err}")
+
                 if attempt >= 2:
                     logger.warning(
                         f"🛡️  [Anti-Ban / Captcha Blocked] Máy chủ JobsGO kích hoạt Bot Challenge trên IP Datacenter. "
@@ -554,6 +570,60 @@ def create_session(proxy: Optional[str] = None) -> Any:
         return session
 
 
+def crawl_from_sitemap(session: Any, max_jobs: int = 50) -> List[Dict[str, Any]]:
+    """
+    Cơ chế cào dự phòng khi trang tìm kiếm bị Cloudflare WAF chặn IP Datacenter:
+    - Đọc file sitemap: https://jobsgo.vn/sitemap-job.xml (sitemap không bị WAF chặn).
+    - Lọc các bài đăng thuộc ngành CNTT / IT / Lập trình theo từ khóa URL.
+    - Cào trực tiếp trang chi tiết từng bài đăng.
+    """
+    logger.info("🗺️ [Sitemap Fallback] Đang tải danh sách việc làm từ JobsGO Sitemap...")
+    it_keywords = [
+        "developer", "engineer", "it", "lap-trinh", "phan-mem", "tester",
+        "frontend", "backend", "fullstack", "java", "python", "react", "php",
+        "net", "data", "ai", "tech", "system", "cloud", "devops", "security",
+        "qa", "qc", "cntt", "mobile", "ios", "android", "embedded", "golang"
+    ]
+
+    candidate_urls: List[str] = []
+    try:
+        r = session.get("https://jobsgo.vn/sitemap-job.xml", timeout=20)
+        if r.status_code == 200:
+            found_urls = re.findall(r"<loc>(https://jobsgo\.vn/viec-lam/[^<]+)</loc>", r.text)
+            for u in found_urls:
+                u_clean = u.split("?")[0].strip()
+                if any(kw in u_clean.lower() for kw in it_keywords):
+                    if u_clean not in candidate_urls:
+                        candidate_urls.append(u_clean)
+                    if len(candidate_urls) >= max_jobs * 2:
+                        break
+    except Exception as e:
+        logger.debug(f"Lỗi khi đọc sitemap JobsGO: {e}")
+
+    logger.info(f"🗺️ [Sitemap Fallback] Tìm thấy {len(candidate_urls)} việc làm IT tiềm năng từ Sitemap.")
+
+    extracted_jobs: List[Dict[str, Any]] = []
+    target_urls = candidate_urls[:max_jobs]
+
+    for idx, job_url in enumerate(target_urls, start=1):
+        time.sleep(random.uniform(1.2, 2.5))
+        logger.info(f"  [{idx}/{len(target_urls)}] [Sitemap] Cào chi tiết: {job_url}")
+        res = safe_request(session, job_url, referer="https://jobsgo.vn/")
+        if not res or res.status_code != 200:
+            continue
+        try:
+            job_data = parse_job_detail(res.text, job_url)
+            extracted_jobs.append(job_data)
+            title_disp = (job_data.get("job_title") or "")[:35]
+            comp_disp = (job_data.get("company_name") or "N/A")[:25]
+            logger.info(f"  ✅ [Thành công] {title_disp} | {comp_disp} | Lương: {job_data['salary']}")
+        except Exception as e:
+            logger.debug(f"Lỗi bóc tách {job_url}: {e}")
+
+    logger.info(f"🎉 [Sitemap Fallback] Thu thập thành công {len(extracted_jobs)} việc làm IT JobsGO.")
+    return extracted_jobs
+
+
 def crawl(
     page: Union[int, str, None] = 10,
     max_pages: Optional[Union[int, str]] = None,
@@ -634,7 +704,18 @@ def crawl(
 
         res = safe_request(session, list_url, max_retries=3, referer=last_referer)
         if not res or res.status_code != 200:
-            logger.warning(f"Không thể tải trang #{current_page} (Status: {res.status_code if res else 'None'}). Kết thúc crawl.")
+            if current_page == 1:
+                logger.warning(
+                    f"⚠️ Không thể tải trang danh sách #{current_page} (Status: {res.status_code if res else 'None'}). "
+                    f"Kích hoạt cơ chế dự phòng: Cào việc làm IT trực tiếp từ Sitemap JobsGO..."
+                )
+                target_jobs_count = (limit_num or 5) * (limit_jobs_per_page or 10)
+                sitemap_jobs = crawl_from_sitemap(session, max_jobs=target_jobs_count)
+                if sitemap_jobs:
+                    all_jobs.extend(sitemap_jobs)
+                    save_data(all_jobs)
+            else:
+                logger.warning(f"Không thể tải trang #{current_page} (Status: {res.status_code if res else 'None'}). Kết thúc crawl.")
             break
 
         last_referer = list_url

@@ -74,8 +74,8 @@ logger = logging.getLogger(__name__)
 
 SOURCE_NAME = "topcv"
 BASE_DOMAIN = "https://www.topcv.vn"
-# URL khởi đầu mặc định: Tìm kiếm việc làm Công nghệ Thông tin (hoặc truyền qua tham số start_url)
-DEFAULT_START_URL = "https://www.topcv.vn/tim-viec-lam-cong-nghe-thong-tin-cr257?type_keyword=1&disable_auto_detect_type_keyword=1&page=1&category_family=r257&saturday_status=0"
+DEFAULT_START_URL = "https://www.topcv.vn/tim-viec-lam-cong-nghe-thong-tin-cr257?page=1"
+FALLBACK_START_URL = "https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026?page=1"
 
 # Thư mục lưu trữ Bronze
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "model" / "bronze"
@@ -228,11 +228,30 @@ def safe_request(
 
             # Nếu gặp lỗi HTTP 403 (Cloudflare WAF chặn IP Datacenter)
             if response.status_code == 403:
+                lower_text = response.text[:2000].lower()
+                is_challenge = "just a moment..." in lower_text or "cf-turnstile" in lower_text or "cloudflare" in lower_text
+
+                # Thử nghiệm luân chuyển TLS Fingerprint Profile (Safari17 / Chrome124) để vượt Cloudflare
+                if HAS_CURL_CFFI and attempt <= 2:
+                    alt_imp = "safari17_0" if attempt == 1 else "chrome124"
+                    logger.info(f"🔄 [Anti-WAF] Thử nghiệm chuyển đổi TLS Profile sang '{alt_imp}' tại {url} (Lần #{attempt})...")
+                    try:
+                        resolved_proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+                        kwargs = {"impersonate": alt_imp, "timeout": 25}
+                        if resolved_proxy:
+                            kwargs["proxies"] = {"http": resolved_proxy, "https": resolved_proxy}
+                        alt_session = curl_requests.Session(**kwargs)
+                        alt_res = alt_session.get(url, timeout=25)
+                        if alt_res.status_code == 200 and "just a moment..." not in alt_res.text[:2000].lower():
+                            logger.info(f"🎉 Vượt Cloudflare thành công bằng profile '{alt_imp}'!")
+                            return alt_res
+                    except Exception as alt_err:
+                        logger.debug(f"Thử profile {alt_imp} thất bại: {alt_err}")
+
                 if attempt >= 2:
                     logger.warning(
-                        f"🛡️  [Cloudflare WAF Blocked HTTP 403] IP Datacenter bị TopCV chặn. "
-                        f"Nếu chạy trên GitHub Actions, bạn có thể thêm secret HTTP_PROXY (Residential Proxy VN). "
-                        f"Tạm dừng cào TopCV để pipeline tiếp tục với các spider khác."
+                        f"🛡️  [Cloudflare WAF Blocked HTTP 403] Không thể tải URL qua web search thông thường. "
+                        f"Kích hoạt cơ chế dự phòng tự động..."
                     )
                     return None
                 logger.warning(
@@ -617,10 +636,64 @@ def save_data(jobs: List[Dict[str, Any]], csv_path: Path = OUTPUT_CSV, json_path
     # 2. Backup JSON cục bộ
     try:
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(json_path, mode="w", encoding="utf-8") as f:
-            json.dump(jobs, f, ensure_ascii=False, indent=2)
     except Exception as err:
         logger.debug(f"Không thể ghi file backup: {err}")
+
+
+def crawl_from_sitemap(session: Any, max_jobs: int = 50) -> List[Dict[str, Any]]:
+    """
+    Cơ chế cào dự phòng khi trang tìm kiếm bị Cloudflare WAF chặn IP Datacenter:
+    - Đọc file sitemap: https://www.topcv.vn/sitemap/jobs_0.xml, jobs_1.xml... (sitemap không bị WAF chặn).
+    - Lọc các bài đăng thuộc ngành CNTT / IT / Lập trình theo từ khóa URL.
+    - Cào trực tiếp trang chi tiết từng bài đăng (trang chi tiết ít bị kiểm duyệt WAF hơn trang tìm kiếm).
+    """
+    logger.info("🗺️ [Sitemap Fallback] Đang tải danh sách việc làm từ TopCV Sitemap...")
+    it_keywords = [
+        "developer", "engineer", "it", "lap-trinh", "phan-mem", "tester",
+        "frontend", "backend", "fullstack", "java", "python", "react", "php",
+        "net", "data", "ai", "tech", "system", "cloud", "devops", "security",
+        "qa", "qc", "cntt", "mobile", "ios", "android", "embedded", "golang"
+    ]
+
+    candidate_urls: List[str] = []
+    for sitemap_idx in range(4):
+        sitemap_url = f"https://www.topcv.vn/sitemap/jobs_{sitemap_idx}.xml"
+        try:
+            r = session.get(sitemap_url, timeout=15)
+            if r.status_code == 200:
+                found_urls = re.findall(r"<loc>(https://www\.topcv\.vn/viec-lam/[^<]+)</loc>", r.text)
+                for u in found_urls:
+                    u_clean = u.split("?")[0].strip()
+                    if any(kw in u_clean.lower() for kw in it_keywords):
+                        if u_clean not in candidate_urls:
+                            candidate_urls.append(u_clean)
+                if len(candidate_urls) >= max_jobs * 2:
+                    break
+        except Exception as e:
+            logger.debug(f"Lỗi khi đọc {sitemap_url}: {e}")
+
+    logger.info(f"🗺️ [Sitemap Fallback] Tìm thấy {len(candidate_urls)} việc làm IT tiềm năng từ Sitemap.")
+
+    extracted_jobs: List[Dict[str, Any]] = []
+    target_urls = candidate_urls[:max_jobs]
+
+    for idx, job_url in enumerate(target_urls, start=1):
+        time.sleep(random.uniform(1.2, 2.5))
+        logger.info(f"  [{idx}/{len(target_urls)}] [Sitemap] Cào chi tiết: {job_url}")
+        res = safe_request(session, job_url, referer="https://www.topcv.vn/")
+        if not res or res.status_code != 200:
+            continue
+        try:
+            job_data = parse_job_detail(res.text, job_url)
+            extracted_jobs.append(job_data)
+            title_disp = (job_data.get("job_title") or "")[:35]
+            comp_disp = (job_data.get("company_name") or "N/A")[:25]
+            logger.info(f"  ✅ [Thành công] {title_disp} | {comp_disp} | Lương: {job_data['salary']}")
+        except Exception as e:
+            logger.debug(f"Lỗi bóc tách {job_url}: {e}")
+
+    logger.info(f"🎉 [Sitemap Fallback] Thu thập thành công {len(extracted_jobs)} việc làm IT TopCV.")
+    return extracted_jobs
 
 
 def crawl(
@@ -684,10 +757,22 @@ def crawl(
         res = safe_request(session, current_url, max_retries=5, referer=last_referer)
 
         if not res or res.status_code != 200:
-            logger.warning(
-                f"Không thể tải trang danh sách #{current_page_idx} (Status: {res.status_code if res else 'None'}). Kết thúc crawl."
-            )
-            break
+            if current_page_idx == 1 and current_url == DEFAULT_START_URL:
+                logger.info(f"🔄 Thử lại trang danh sách với URL thay thế: {FALLBACK_START_URL}")
+                current_url = FALLBACK_START_URL
+                res = safe_request(session, current_url, max_retries=3, referer=last_referer)
+
+            if not res or res.status_code != 200:
+                logger.warning(
+                    f"⚠️ Không thể tải trang danh sách #{current_page_idx} (Status: {res.status_code if res else 'None'}). "
+                    f"Kích hoạt cơ chế dự phòng: Cào việc làm IT trực tiếp từ Sitemap TopCV..."
+                )
+                target_jobs_count = (limit_num or 5) * (limit_jobs_per_page or 10)
+                sitemap_jobs = crawl_from_sitemap(session, max_jobs=target_jobs_count)
+                if sitemap_jobs:
+                    all_jobs.extend(sitemap_jobs)
+                    save_data(all_jobs)
+                break
 
         last_referer = current_url
 
