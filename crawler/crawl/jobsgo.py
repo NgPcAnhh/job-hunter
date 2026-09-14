@@ -183,11 +183,22 @@ def safe_request(
                     except Exception as alt_err:
                         logger.debug(f"Thử profile {alt_imp} thất bại: {alt_err}")
 
+                # Nếu TLS profile không qua được và gặp Cloudflare Challenge -> Gọi Stealth Browser giải Turnstile!
+                try:
+                    from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+                    logger.info(f"🌐 [Cloudflare WAF 403] Kích hoạt Stealth Headless Browser giải Turnstile tại: {url}...")
+                    b_res = fetch_with_stealth_browser(url)
+                    if b_res and b_res.status_code == 200:
+                        logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Đồng bộ cookie phiên...")
+                        sync_cookies_to_session(session, b_res.cookies)
+                        return b_res
+                except Exception as b_err:
+                    logger.debug(f"Lỗi khi kích hoạt browser solver: {b_err}")
+
                 if attempt >= 2:
                     logger.warning(
                         f"🛡️  [Anti-Ban / Captcha Blocked] Máy chủ JobsGO kích hoạt Bot Challenge trên IP Datacenter. "
-                        f"Nếu chạy trên GitHub Actions, bạn có thể thêm secret HTTP_PROXY (Residential Proxy VN). "
-                        f"Tạm dừng cào JobsGO để pipeline tiếp tục với các spider khác."
+                        f"Kích hoạt cơ chế dự phòng tự động..."
                     )
                     return None
                 logger.warning(
@@ -813,6 +824,12 @@ def crawl(
         # Tự động lưu lũy tiến dữ liệu sau mỗi trang hoàn tất
         save_data(all_jobs)
         current_page += 1
+
+    try:
+        from crawler.utils.browser_solver import close_global_solver
+        close_global_solver()
+    except Exception:
+        pass
 
     logger.info(f"\n🎉 Hoàn thành crawl JobsGO! Tổng cộng: {len(all_jobs)} việc làm đã được trích xuất và lưu trữ.")
     return all_jobs

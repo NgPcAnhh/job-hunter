@@ -8,3 +8,5 @@ supabase>=2.4.0
 python-dotenv>=1.0.1
 tenacity>=8.3.0
 psycopg2-binary>=2.9.9
+playwright>=1.40.0
+playwright-stealth>=2.0.0
