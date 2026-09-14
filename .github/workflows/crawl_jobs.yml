@@ -1,4 +1,4 @@
-name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet, Joboko, 123Job, TimViec365, TopDev)
+name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet, Joboko, 123Job, TopDev)
 
 'on':
   schedule:
@@ -13,7 +13,7 @@ name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet
     # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
     inputs:
       sites:
-        description: 'Tên spider cần cào (để trống để mặc định cào TẤT CẢ các trang web)'
+        description: 'Tên spider cần cào (để trống để mặc định cào 7 trang trên Cloud)'
         required: false
         default: ''
       pages:
@@ -99,7 +99,7 @@ jobs:
           if [ -n "$SELECTED_SITES" ]; then
             CMD="python crawler/main.py --site $SELECTED_SITES"
           else
-            CMD="python crawler/main.py"
+            CMD="python crawler/main.py --site vietnamworks,vieclam24h,careerlink,careerviet,joboko,job123,topdev"
           fi
           
           if [ -n "${{ inputs.pages }}" ]; then
@@ -138,8 +138,8 @@ jobs:
               exit(0)
 
           sources = [
-              'careerlink', 'careerviet', 'topcv', 'vieclam24h',
-              'vietnamworks', 'jobsgo', 'joboko', 'timviec365', 'topdev', 'job123'
+              'vietnamworks', 'vieclam24h', 'careerlink', 'careerviet',
+              'joboko', 'job123', 'topdev'
           ]
           
           with open(summary_file, 'a', encoding='utf-8') as f:

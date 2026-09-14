@@ -1,12 +1,12 @@
-name: Manual Local Crawlers - TopCV, JobsGO, Vieclam24h, Timviec365 (Self-Hosted Runner)
+name: Manual Local Crawlers - TopCV, JobsGO, TimViec365 (Self-Hosted Runner)
 
 on:
   workflow_dispatch:
     inputs:
       sites:
-        description: 'Tên spider cần chạy trên máy local (mặc định: topcv,jobsgo,vieclam24h,timviec365)'
+        description: 'Tên spider cần chạy trên máy local (mặc định: topcv,jobsgo,timviec365)'
         required: false
-        default: 'topcv,jobsgo,vieclam24h,timviec365'
+        default: 'topcv,jobsgo,timviec365'
       pages:
         description: 'Số lượng trang muốn cào cho mỗi website (mặc định: 10)'
         required: false
@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   crawl_local:
-    name: Crawl TopCV & JobsGO on Local Machine (Vietnam IP)
+    name: Crawl TopCV, JobsGO & TimViec365 on Local Machine (Vietnam IP)
     runs-on: self-hosted
     timeout-minutes: 120
 
@@ -72,7 +72,7 @@ jobs:
         run: |
           SITES="${{ inputs.sites }}"
           if [ -z "$SITES" ]; then
-            SITES="topcv,jobsgo,vieclam24h,timviec365"
+            SITES="topcv,jobsgo,timviec365"
           fi
           CMD="python crawler/main.py --site $SITES"
           if [ -n "${{ inputs.pages }}" ]; then
@@ -107,10 +107,10 @@ jobs:
           if not summary_file:
               exit(0)
 
-          sources = ['topcv', 'jobsgo', 'vieclam24h', 'timviec365']
+          sources = ['topcv', 'jobsgo', 'timviec365']
 
           with open(summary_file, 'a', encoding='utf-8') as f:
-              f.write('## 📊 Báo Cáo Kết Quả TopCV & JobsGO (Chạy trên Local Runner)\n\n')
+              f.write('## 📊 Báo Cáo Kết Quả TopCV, JobsGO & TimViec365 (Chạy trên Local Runner)\n\n')
               f.write('| Tên Bảng (Source / Unified) | Số Lượng Bản Ghi |\n')
               f.write('| :--- | :--- |\n')
               try:
@@ -139,7 +139,7 @@ jobs:
         shell: bash
         run: |
           if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
-            MSG="🤖 *[Job Hunter Local Pipeline - TopCV & JobsGO]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="🤖 *[Job Hunter Local Pipeline - TopCV, JobsGO, TimViec365]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
               -d "text=${MSG}" \
