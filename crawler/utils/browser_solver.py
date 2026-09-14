@@ -1,30 +1,20 @@
 """
-Browser Solver Module (Playwright + Stealth + Virtual Headful Support)
+Browser Solver Module (Subprocess-Isolated Playwright + Stealth)
 Tự động giải quyết Cloudflare Turnstile / Managed Challenge trên môi trường Cloud (GitHub Actions IP).
-Được thiết kế riêng để dự phòng cho các website tuyển dụng bảo vệ bởi Cloudflare WAF (TopCV, JobsGO).
+Sử dụng kiến trúc Subprocess để đảm bảo cách ly tuyệt đối, chống xung đột luồng (Thread-Safe trong ThreadPoolExecutor),
+và hỗ trợ chế độ Xvfb Virtual Headful trên Ubuntu runner.
 """
 
 import os
-import platform
+import sys
+import json
 import logging
-import time
+import platform
+import tempfile
+import subprocess
 from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
-
-HAS_PLAYWRIGHT = False
-try:
-    from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
-    HAS_PLAYWRIGHT = True
-except ImportError:
-    sync_playwright = None
-
-HAS_STEALTH = False
-try:
-    from playwright_stealth import Stealth
-    HAS_STEALTH = True
-except ImportError:
-    Stealth = None
 
 
 class BrowserResponse:
@@ -40,100 +30,50 @@ class BrowserResponse:
         self.cookies = cookies or []
 
     def json(self) -> Any:
-        import json
         return json.loads(self.text)
 
 
-class StealthBrowserSolver:
-    """
-    Quản lý Chromium kèm cơ chế Anti-Detection Stealth để vượt Cloudflare Turnstile.
-    Hỗ trợ cả môi trường Headless (Windows/Mac) lẫn Xvfb Virtual Display (Linux/GitHub Actions).
-    """
+def _worker_fetch(url: str, output_path: str, timeout_sec: int = 35):
+    """Thực thi bên trong subprocess độc lập để cách ly Playwright và Greenlet."""
+    from playwright.sync_api import sync_playwright
 
-    def __init__(self):
-        self._playwright = None
-        self._browser: Optional[Browser] = None
-        self._context: Optional[BrowserContext] = None
-        self._stealth = Stealth() if HAS_STEALTH else None
-        self.is_linux = platform.system().lower() == "linux"
-        # Trên Linux nếu có DISPLAY (từ xvfb-run), chạy headless=False để tránh 100% cờ headless của Cloudflare
-        self.has_display = bool(os.getenv("DISPLAY"))
-        self.use_headless = not (self.is_linux and self.has_display)
+    is_linux = platform.system().lower() == "linux"
+    has_display = bool(os.getenv("DISPLAY"))
+    # Trên Linux nếu có DISPLAY (từ xvfb-run), chạy headless=False để tránh 100% cờ headless của Cloudflare
+    use_headless = not (is_linux and has_display)
 
-    def _ensure_browser(self):
-        if not HAS_PLAYWRIGHT:
-            raise RuntimeError("Playwright chưa được cài đặt trong môi trường!")
-        if self._playwright is None:
-            self._playwright = sync_playwright().start()
+    if is_linux:
+        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    else:
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-        if self._browser is None:
-            args = [
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-infobars",
-                "--disable-dev-shm-usage",
-                "--window-size=1920,1080",
-            ]
-            logger.info(
-                f"🚀 [Browser Solver] Khởi chạy Chromium (OS: {platform.system()}, Headless: {self.use_headless}, Display: {self.has_display})..."
-            )
-            self._browser = self._playwright.chromium.launch(
-                headless=self.use_headless,
-                args=args,
-            )
+    args = [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-infobars",
+        "--disable-dev-shm-usage",
+        "--window-size=1920,1080",
+    ]
 
-        if self._context is None:
-            if self.is_linux:
-                ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-            else:
-                ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-
-            self._context = self._browser.new_context(
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=use_headless, args=args)
+            context = browser.new_context(
                 user_agent=ua,
                 viewport={"width": 1920, "height": 1080},
                 locale="vi-VN",
                 timezone_id="Asia/Ho_Chi_Minh",
             )
+            page = context.new_page()
 
-    def close(self):
-        try:
-            if self._context:
-                self._context.close()
-                self._context = None
-            if self._browser:
-                self._browser.close()
-                self._browser = None
-            if self._playwright:
-                self._playwright.stop()
-                self._playwright = None
-        except Exception as e:
-            logger.debug(f"Lỗi khi đóng browser solver: {e}")
-
-    def fetch_url(self, url: str, timeout_sec: int = 35) -> Optional[BrowserResponse]:
-        """
-        Tải URL qua Stealth Chromium. Tự động phát hiện và vượt qua Cloudflare Turnstile.
-        """
-        if not HAS_PLAYWRIGHT:
-            logger.warning("⚠️ Playwright chưa sẵn sàng. Bỏ qua browser solver.")
-            return None
-
-        page = None
-        try:
-            self._ensure_browser()
-            page = self._context.new_page()
-
-            if self._stealth:
-                self._stealth.apply_stealth_sync(page)
-
-            logger.info(f"🌐 [Stealth Browser] Đang tải URL: {url}")
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_sec * 1000)
             page.wait_for_timeout(2000)
 
-            # Kiểm tra xem có gặp Cloudflare Turnstile Challenge ("Just a moment...") không
+            # Xử lý Cloudflare Turnstile Challenge
             for attempt in range(8):
                 title = page.title().lower()
-                content_preview = page.content()[:3000].lower()
+                content_preview = page.content()[:2500].lower()
 
                 is_challenge = (
                     "just a moment..." in title
@@ -144,13 +84,10 @@ class StealthBrowserSolver:
                 if not is_challenge:
                     break
 
-                logger.info(f"⏳ [Cloudflare Turnstile] Đang xử lý thử thách bảo mật ({attempt + 1}/8)...")
-
-                # Tìm iframe Turnstile và mô phỏng tương tác chuột thực sự
+                # Tìm kiếm iframe Turnstile và click chuột phần cứng
                 try:
                     for f in page.frames:
                         if "challenges.cloudflare.com" in f.url:
-                            logger.info("🔍 [Turnstile] Phát hiện iframe Cloudflare Challenge...")
                             body = f.locator("body")
                             if body.count() > 0:
                                 box = body.bounding_box()
@@ -158,49 +95,94 @@ class StealthBrowserSolver:
                                     click_x = box["x"] + 30
                                     click_y = box["y"] + box["height"] / 2
                                     page.mouse.click(click_x, click_y)
-                                    logger.info(f"👆 [Turnstile] Đã click vào vị trí ({click_x:.1f}, {click_y:.1f})!")
                                     break
-                except Exception as click_err:
-                    logger.debug(f"Lỗi click iframe: {click_err}")
+                except Exception:
+                    pass
 
                 page.wait_for_timeout(2000)
 
             final_title = page.title()
             final_html = page.content()
-            cookies = self._context.cookies()
+            cookies = context.cookies()
+            browser.close()
 
-            page.close()
-            page = None
-
+            status = 200
             if "just a moment..." in final_title.lower() and len(final_html) < 4000:
-                logger.warning(f"🛡️ [Stealth Browser] Cloudflare Turnstile chưa giải quyết được tại {url}.")
-                return BrowserResponse(final_html, status_code=403, url=url, cookies=cookies)
+                status = 403
 
-            logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Tiêu đề: '{final_title[:50]}' (Độ dài: {len(final_html):,} bytes)")
-            return BrowserResponse(final_html, status_code=200, url=url, cookies=cookies)
+            data = {
+                "status": status,
+                "title": final_title,
+                "html": final_html,
+                "cookies": cookies,
+                "url": url,
+            }
+            with open(output_path, "w", encoding="utf-8") as out_f:
+                json.dump(data, out_f, ensure_ascii=False)
 
-        except Exception as err:
-            logger.warning(f"⚠️ [Stealth Browser] Lỗi khi tải URL {url}: {err}")
-            if page:
-                try:
-                    page.close()
-                except Exception:
-                    pass
-            return None
-
-
-# Global solver instance (lazy loaded)
-_global_solver: Optional[StealthBrowserSolver] = None
+    except Exception as err:
+        try:
+            with open(output_path, "w", encoding="utf-8") as out_f:
+                json.dump({"status": 500, "error": str(err), "url": url}, out_f)
+        except Exception:
+            pass
 
 
 def fetch_with_stealth_browser(url: str, timeout_sec: int = 35) -> Optional[BrowserResponse]:
     """
-    Hàm tiện ích toàn cục để gọi nhanh giải pháp Stealth Browser.
+    Hàm gọi Stealth Browser thông qua Subprocess độc lập:
+    - Cách ly 100% Greenlet giữa các luồng trong ThreadPoolExecutor (Tránh triệt để Deadlock).
+    - Tự động thu dọn bộ nhớ và tài nguyên khi subprocess kết thúc.
+    - Giới hạn cứng thời gian thực thi (Hard Timeout).
     """
-    global _global_solver
-    if _global_solver is None:
-        _global_solver = StealthBrowserSolver()
-    return _global_solver.fetch_url(url, timeout_sec=timeout_sec)
+    tmp_file = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            tmp_file = f.name
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "crawler.utils.browser_solver",
+            url,
+            tmp_file,
+            str(timeout_sec),
+        ]
+
+        logger.info(f"🌐 [Subprocess Browser] Đang khởi chạy browser độc lập để cào: {url}")
+        proc = subprocess.run(cmd, timeout=timeout_sec + 15, capture_output=True, text=True)
+
+        if not os.path.exists(tmp_file) or os.path.getsize(tmp_file) == 0:
+            logger.warning(f"⚠️ [Subprocess Browser] Subprocess không tạo được dữ liệu đầu ra: {proc.stderr[:300]}")
+            return None
+
+        with open(tmp_file, "r", encoding="utf-8") as f:
+            result = json.load(f)
+
+        status = result.get("status", 500)
+        html = result.get("html", "")
+        cookies = result.get("cookies", [])
+        title = result.get("title", "")
+
+        if status == 200:
+            logger.info(f"🎉 [Subprocess Browser] Vượt Cloudflare thành công! Tiêu đề: '{title[:45]}' ({len(html):,} bytes)")
+            return BrowserResponse(html, status_code=200, url=url, cookies=cookies)
+        else:
+            logger.warning(f"🛡️ [Subprocess Browser] Máy chủ trả về status {status}: {result.get('error', '')}")
+            return BrowserResponse(html, status_code=status, url=url, cookies=cookies)
+
+    except subprocess.TimeoutExpired:
+        logger.warning(f"⏱️ [Subprocess Browser] Quá thời gian chờ ({timeout_sec}s) khi tải {url}.")
+        return None
+    except Exception as err:
+        logger.warning(f"⚠️ [Subprocess Browser] Lỗi thực thi subprocess: {err}")
+        return None
+    finally:
+        if tmp_file and os.path.exists(tmp_file):
+            try:
+                os.remove(tmp_file)
+            except Exception:
+                pass
 
 
 def sync_cookies_to_session(session: Any, cookies: List[Dict[str, Any]]):
@@ -221,8 +203,15 @@ def sync_cookies_to_session(session: Any, cookies: List[Dict[str, Any]]):
 
 
 def close_global_solver():
-    """Giải phóng tài nguyên browser khi hoàn thành phiên crawl."""
-    global _global_solver
-    if _global_solver is not None:
-        _global_solver.close()
-        _global_solver = None
+    """Tương thích ngược: giải phóng tài nguyên (Subprocess tự động thu dọn khi thoát)."""
+    pass
+
+
+if __name__ == "__main__":
+    if len(sys.argv) >= 3:
+        target_url = sys.argv[1]
+        out_json = sys.argv[2]
+        t_sec = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 35
+        _worker_fetch(target_url, out_json, timeout_sec=t_sec)
+    else:
+        print("Usage: python -m crawler.utils.browser_solver <url> <output_json_path> [timeout_sec]")
