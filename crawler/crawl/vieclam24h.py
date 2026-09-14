@@ -168,16 +168,29 @@ def safe_request(
 
             # Kiểm tra Bot Challenge / Captcha
             if check_is_captcha_or_challenge(response):
+                logger.warning(
+                    f"⚠️  [Anti-Ban] Phát hiện Bot Challenge/Captcha tại {url} (Lần #{attempt}/{max_retries}). "
+                    f"Đang kích hoạt Stealth Headless Browser giải mã Cloudflare Turnstile..."
+                )
+                try:
+                    from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+                    b_res = fetch_with_stealth_browser(url)
+                    if b_res and b_res.status_code == 200 and not check_is_captcha_or_challenge(b_res):
+                        logger.info(f"🎉 [Stealth Browser] Vượt qua Bot Challenge của Vieclam24h thành công!")
+                        if session:
+                            sync_cookies_to_session(session, b_res.cookies)
+                        return b_res
+                except Exception as b_err:
+                    logger.debug(f"Lỗi khi kích hoạt stealth browser: {b_err}")
+
                 if attempt >= 2:
                     logger.warning(
                         f"🛡️  [Anti-Ban / Captcha Blocked] Máy chủ Vieclam24h kích hoạt Bot Challenge trên IP Datacenter. "
-                        f"Nếu chạy trên GitHub Actions, bạn có thể thêm secret HTTP_PROXY (Residential Proxy VN). "
                         f"Tạm dừng cào Vieclam24h để pipeline tiếp tục với các spider khác."
                     )
                     return None
                 logger.warning(
-                    f"⚠️  [Anti-Ban] Phát hiện Bot Challenge/Captcha tại lần thử #{attempt}/{max_retries}. "
-                    f"Tự động tạm dừng {backoff:.1f}s để giải phóng cờ IP..."
+                    f"⚠️  [Anti-Ban] Tạm dừng {backoff:.1f}s trước khi thử lại..."
                 )
                 time.sleep(backoff)
                 backoff *= 2
