@@ -63,12 +63,6 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      - name: 🛡️ Setup Cloudflare WARP (Bypass Datacenter IP Restrictions)
-        uses: fscarmen/warp-on-actions@main
-        with:
-          stack: dual
-          mode: wireguard
-
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
