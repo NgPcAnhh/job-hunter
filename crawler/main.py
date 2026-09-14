@@ -105,6 +105,9 @@ def run_pipeline(
         "jobsgo": ("crawler.crawl.jobsgo", "crawl"),
         "joboko": ("crawler.crawl.joboko", "crawl"),
         "vietnamworks": ("crawler.crawl.vietnamworks", "crawl"),
+        "job123": ("crawler.crawl.job123", "crawl"),
+        "timviec365": ("crawler.crawl.365timviec", "crawl"),
+        "topdev": ("crawler.crawl.topdev", "crawl"),
     }
 
     targets = sites if sites else list(registered_spiders.keys())

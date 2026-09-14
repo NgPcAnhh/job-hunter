@@ -47,6 +47,9 @@ ALL_SOURCES = [
     "vietnamworks",
     "jobsgo",
     "joboko",
+    "123job",
+    "timviec365",
+    "topdev",
 ]
 
 
