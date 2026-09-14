@@ -78,20 +78,50 @@ USER_AGENTS = [
 ]
 
 
-def get_random_headers() -> Dict[str, str]:
-    """Tạo bộ header HTTP tự nhiên mô phỏng trình duyệt người dùng."""
-    return {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "DNT": "1",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "same-origin",
-    }
+def get_request_headers(referer: Optional[str] = None) -> Dict[str, str]:
+    """Tạo bộ header HTTP tự nhiên tương thích hoàn hảo với fingerprint của TLS client."""
+    if HAS_CURL_CFFI:
+        # curl_cffi Chrome120 tự sinh User-Agent, Sec-Ch-Ua, Sec-Fetch nhất quán. Chỉ cần bổ sung ngôn ngữ & referer
+        headers = {
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+    else:
+        headers = {
+            "User-Agent": random.choice(USER_AGENTS),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+    if referer:
+        headers["Referer"] = referer
+    return headers
+
+
+# Alias tương thích
+get_random_headers = get_request_headers
+
+
+def fetch_list_page_with_playwright(url: str) -> Optional[str]:
+    """Fallback bằng Playwright Headless Browser nếu HTTP request trả về 0 kết quả do Cloud/WAF challenge."""
+    try:
+        from playwright.sync_api import sync_playwright
+        logger.info(f"🌐 [Playwright Fallback] Đang tải trang danh sách bằng trình duyệt: {url}")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                locale="vi-VN",
+            )
+            page.goto(url, timeout=35000, wait_until="domcontentloaded")
+            try:
+                page.wait_for_selector(".job-item, a[href*='/tim-viec-lam/']", timeout=10000)
+            except Exception:
+                pass
+            html = page.content()
+            browser.close()
+            return html
+    except Exception as e:
+        logger.warning(f"⚠️ Playwright Fallback gặp lỗi: {e}")
+        return None
 
 
 def check_is_captcha_or_challenge(response) -> bool:
@@ -126,16 +156,14 @@ def safe_request(
     """
     Hàm gửi request an toàn bảo vệ chống chặn IP (Anti-Ban / Anti-Tarpit):
     - Sử dụng curl_cffi giả lập TLS Chrome 120.
-    - Tự động luân phiên User-Agent và Referer.
+    - Nhất quán Client Hints / User-Agent.
     - Phát hiện Captcha/Challenge. Khi phát hiện, tự động 'ngủ hạ nhiệt' (Backoff) và thử lại.
     - Xử lý timeout/drop connection tự động bằng Exponential Backoff.
     """
     backoff = initial_backoff
 
     for attempt in range(1, max_retries + 1):
-        headers = get_random_headers()
-        if referer:
-            headers["Referer"] = referer
+        headers = get_request_headers(referer=referer)
 
         try:
             if HAS_CURL_CFFI:
@@ -475,6 +503,35 @@ def crawl(
 
             soup = BeautifulSoup(res.text, "html.parser")
             job_urls = extract_job_urls_from_page(soup)
+            page_title = soup.title.get_text(strip=True) if soup.title else "N/A"
+            logger.info(
+                f"📄 Phản hồi #{current_page}: HTTP {res.status_code} | URL: {res.url} | "
+                f"{len(res.text)} bytes | Title: {page_title} | URLs tìm thấy: {len(job_urls)}"
+            )
+
+            # Nếu HTTP trả về 0 URLs tại trang 1: Thử link search thay thế hoặc Playwright Fallback
+            if not job_urls and current_page == 1:
+                alt_url = f"https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19&page={current_page}"
+                logger.info(f"🔄 Thử lại trang #{current_page} với endpoint search thay thế: {alt_url}")
+                alt_res = safe_request(session, alt_url, max_retries=2, initial_backoff=3.0)
+                if alt_res and alt_res.status_code == 200:
+                    alt_soup = BeautifulSoup(alt_res.text, "html.parser")
+                    alt_urls = extract_job_urls_from_page(alt_soup)
+                    if alt_urls:
+                        logger.info(f"✅ Thành công với endpoint search: tìm thấy {len(alt_urls)} jobs!")
+                        job_urls = alt_urls
+                        base_url_with_filter = "https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19"
+
+            # Nếu vẫn không có URLs (do WAF/Cloud Challenge hoặc client-side render): Kích hoạt Playwright Fallback
+            if not job_urls:
+                logger.info(f"⚡ Thử fallback sang Playwright Headless Browser cho trang #{current_page}...")
+                pw_html = fetch_list_page_with_playwright(page_url)
+                if pw_html:
+                    pw_soup = BeautifulSoup(pw_html, "html.parser")
+                    pw_urls = extract_job_urls_from_page(pw_soup)
+                    if pw_urls:
+                        logger.info(f"✅ Playwright Fallback thành công: tìm thấy {len(pw_urls)} jobs!")
+                        job_urls = pw_urls
 
             if not job_urls:
                 logger.info(f"Không tìm thấy việc làm nào ở trang #{current_page}. Đã cào hết toàn bộ trang!")
