@@ -100,27 +100,35 @@ def get_request_headers(referer: Optional[str] = None) -> Dict[str, str]:
 get_random_headers = get_request_headers
 
 
-def fetch_list_page_with_playwright(url: str) -> Optional[str]:
+def fetch_list_page_with_playwright(url: str, session: Optional[Any] = None) -> Optional[str]:
     """Fallback bằng Playwright Headless Browser nếu HTTP request trả về 0 kết quả do Cloud/WAF challenge."""
     try:
         from playwright.sync_api import sync_playwright
-        logger.info(f"🌐 [Playwright Fallback] Đang tải trang danh sách bằng trình duyệt: {url}")
+        logger.info(f"🌐 [Playwright] Đang tải trang bằng trình duyệt: {url}")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
+            context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 locale="vi-VN",
             )
+            page = context.new_page()
             page.goto(url, timeout=35000, wait_until="domcontentloaded")
             try:
-                page.wait_for_selector(".job-item, a[href*='/tim-viec-lam/']", timeout=10000)
+                page.wait_for_selector(".job-item, a[href*='/tim-viec-lam/'], h1.job-title", timeout=8000)
             except Exception:
                 pass
             html = page.content()
+
+            # Đồng bộ cookies thu được từ trình duyệt sang HTTP session
+            if session is not None and hasattr(session, "cookies"):
+                pw_cookies = context.cookies()
+                for c in pw_cookies:
+                    session.cookies.set(c['name'], c['value'], domain=c.get('domain', '.careerlink.vn'))
+
             browser.close()
             return html
     except Exception as e:
-        logger.warning(f"⚠️ Playwright Fallback gặp lỗi: {e}")
+        logger.warning(f"⚠️ Playwright gặp lỗi: {e}")
         return None
 
 
@@ -263,6 +271,14 @@ def parse_job_detail(soup: BeautifulSoup, job_url: str = "") -> Dict[str, Any]:
     # 1. Header Block - Loại bỏ thẻ h1 ẩn SEO (h1.d-none)
     job_title_elem = soup.select_one("h1.job-title:not(.d-none), h1#job-title:not(.d-none), h1:not(.d-none)")
     job_title = job_title_elem.get_text(strip=True) if job_title_elem else None
+
+    # Fallback tiêu đề từ meta og:title nếu h1 không có
+    if not job_title or "careerlink" in job_title.lower():
+        og_elem = soup.find("meta", property="og:title")
+        if og_elem and og_elem.get("content"):
+            cand = og_elem["content"].split("-")[0].strip()
+            if "careerlink" not in cand.lower() and "tuyển dụng" not in cand.lower() and len(cand) > 3:
+                job_title = cand
 
     comp_a = soup.select_one("p.org-name a, a.org-name, div.org-name a")
     company_name = None
@@ -479,6 +495,13 @@ def crawl(
     if proxy:
         session.proxies = {"http": proxy, "https": proxy}
 
+    # Khởi tạo cookie session ban đầu từ trang chủ để tránh bị redirect
+    try:
+        session.get("https://www.careerlink.vn/", timeout=15)
+        logger.info(f"🍪 [Session Init] Đã khởi tạo cookie session ban đầu: {list(session.cookies.keys())}")
+    except Exception as e:
+        logger.debug(f"Không thể khởi tạo cookie session ban đầu: {e}")
+
     current_page = 1
     job_counter = 0
 
@@ -525,7 +548,7 @@ def crawl(
             # Nếu vẫn không có URLs (do WAF/Cloud Challenge hoặc client-side render): Kích hoạt Playwright Fallback
             if not job_urls:
                 logger.info(f"⚡ Thử fallback sang Playwright Headless Browser cho trang #{current_page}...")
-                pw_html = fetch_list_page_with_playwright(page_url)
+                pw_html = fetch_list_page_with_playwright(page_url, session=session)
                 if pw_html:
                     pw_soup = BeautifulSoup(pw_html, "html.parser")
                     pw_urls = extract_job_urls_from_page(pw_soup)
@@ -537,7 +560,7 @@ def crawl(
                 if not job_urls:
                     alt_pw_url = f"https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19&page={current_page}"
                     logger.info(f"⚡ Thử fallback Playwright với search URL: {alt_pw_url}...")
-                    alt_pw_html = fetch_list_page_with_playwright(alt_pw_url)
+                    alt_pw_html = fetch_list_page_with_playwright(alt_pw_url, session=session)
                     if alt_pw_html:
                         alt_pw_soup = BeautifulSoup(alt_pw_html, "html.parser")
                         alt_pw_urls = extract_job_urls_from_page(alt_pw_soup)
@@ -577,12 +600,22 @@ def crawl(
                     time.sleep(sleep_time)
 
                 detail_res = safe_request(session, j_url, max_retries=3, initial_backoff=6.0, referer=page_url)
-                if not detail_res or detail_res.status_code != 200:
-                    logger.warning(f"  [#{idx}/{len(new_job_urls)}] Bỏ qua job {j_url}")
-                    continue
+                
+                # Kiểm tra nếu bị redirect về trang chủ (do thiếu hoặc hết hạn session cookie)
+                is_redirected_to_home = False
+                if detail_res and str(detail_res.url).rstrip("/") in ["https://www.careerlink.vn", "https://careerlink.vn"]:
+                    is_redirected_to_home = True
 
-                detail_soup = BeautifulSoup(detail_res.text, "html.parser")
-                job_data = parse_job_detail(detail_soup, job_url=j_url)
+                detail_soup = BeautifulSoup(detail_res.text, "html.parser") if (detail_res and not is_redirected_to_home) else None
+                job_data = parse_job_detail(detail_soup, job_url=j_url) if detail_soup else {}
+
+                # Nếu không bóc tách được job_title (hoặc bị redirect về trang chủ): Dùng Playwright tải chi tiết và đồng bộ lại cookie
+                if not job_data.get("job_title"):
+                    logger.info(f"  [#{idx}] Đang tải lại chi tiết bằng Playwright: {j_url}")
+                    pw_detail_html = fetch_list_page_with_playwright(j_url, session=session)
+                    if pw_detail_html:
+                        detail_soup = BeautifulSoup(pw_detail_html, "html.parser")
+                        job_data = parse_job_detail(detail_soup, job_url=j_url)
 
                 if not job_data.get("job_title"):
                     logger.warning(f"  [#{idx}] Không bóc tách được job_title tại {j_url}. Bỏ qua.")
