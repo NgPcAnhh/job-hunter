@@ -2,10 +2,12 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
 
 'on':
   schedule:
-    # Chạy 2 lần mỗi ngày:
-    # - 05:00 UTC = 12:00 trưa giờ Việt Nam (UTC+7)
-    # - 17:00 UTC = 00:00 đêm (12h đêm) giờ Việt Nam (UTC+7)
-    - cron: '0 5,17 * * *'
+    # Chạy tự động định kỳ 6 tiếng 1 lần (4 lần/ngày theo giờ Việt Nam UTC+7):
+    # - 17:00 UTC = 00:00 (12h đêm) giờ Việt Nam
+    # - 23:00 UTC = 06:00 (6h sáng) giờ Việt Nam
+    # - 05:00 UTC = 12:00 (12h trưa) giờ Việt Nam
+    # - 11:00 UTC = 18:00 (6h tối) giờ Việt Nam
+    - cron: '0 5,11,17,23 * * *'
 
   workflow_dispatch:
     # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
