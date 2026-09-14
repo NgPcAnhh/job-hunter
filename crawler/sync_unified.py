@@ -45,7 +45,6 @@ ALL_SOURCES = [
     "topcv",
     "vieclam24h",
     "vietnamworks",
-    "jobsgo",
     "joboko",
 ]
 

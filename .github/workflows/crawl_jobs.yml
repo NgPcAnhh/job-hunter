@@ -13,7 +13,7 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
     # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
     inputs:
       sites:
-        description: 'Tên spider cần chạy (vd: careerlink,topcv,jobsgo hoặc để trống để chạy tất cả)'
+        description: 'Tên spider cần chạy (vd: careerlink,topcv,vieclam24h hoặc để trống để chạy tất cả)'
         required: false
         default: ''
       pages:

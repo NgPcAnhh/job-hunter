@@ -1,17 +1,16 @@
-name: Test TopCV & JobsGO Bypass on Cloud
+name: Test TopCV Bypass on Cloud
 
 on:
   push:
     paths:
       - 'crawler/crawl/topcv.py'
-      - 'crawler/crawl/jobsgo.py'
       - 'crawler/utils/browser_solver.py'
-      - '.github/workflows/test_topcv_jobsgo.yml'
+      - '.github/workflows/test_topcv.yml'
   workflow_dispatch:
 
 jobs:
   test_bypass:
-    name: Test TopCV and JobsGO Bypass
+    name: Test TopCV Bypass
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
@@ -35,7 +34,7 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      - name: 🧪 Run TopCV & JobsGO Test under Xvfb
+      - name: 🧪 Run TopCV Test under Xvfb
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
@@ -43,14 +42,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONUNBUFFERED: "1"
         run: |
-          echo "🚀 Bắt đầu kiểm thử vượt Cloudflare cho TopCV & JobsGO trên Cloud..."
+          echo "🚀 Bắt đầu kiểm thử vượt Cloudflare cho TopCV trên Cloud..."
           set -o pipefail
-          xvfb-run -a python crawler/main.py --site topcv,jobsgo --pages 1 --jobs-per-page 2 2>&1 | tee test_run.log
+          xvfb-run -a python crawler/main.py --site topcv --pages 1 --jobs-per-page 2 2>&1 | tee test_run.log
 
       - name: 📋 Render Test Log to Summary
         if: always()
         run: |
-          echo "## 📋 Kết Quả Test TopCV & JobsGO Trên Cloud" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Kết Quả Test TopCV Trên Cloud" >> $GITHUB_STEP_SUMMARY
           if [ -f test_run.log ]; then
             echo '```' >> $GITHUB_STEP_SUMMARY
             tail -n 200 test_run.log >> $GITHUB_STEP_SUMMARY
