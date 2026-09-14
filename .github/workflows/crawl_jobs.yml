@@ -61,12 +61,6 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      - name: 🛡️ Setup Cloudflare WARP (Bypass Datacenter IP Restrictions)
-        uses: fscarmen/warp-on-actions@main
-        with:
-          stack: dual
-          mode: wireguard
-
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -117,8 +111,8 @@ jobs:
             CMD="$CMD --workers ${{ inputs.workers }}"
           fi
           
-          echo "Executing command: $CMD"
-          eval $CMD
+          echo "Executing command: xvfb-run -a $CMD"
+          xvfb-run -a $CMD
 
       - name: "📊 Generate GitHub Step Summary"
         if: always()

@@ -599,7 +599,10 @@ def crawl_from_sitemap(session: Any, max_jobs: int = 50) -> List[Dict[str, Any]]
     candidate_urls: List[str] = []
     try:
         r = session.get("https://jobsgo.vn/sitemap-job.xml", timeout=20)
-        if r.status_code == 200:
+        if not r or r.status_code != 200:
+            from crawler.utils.browser_solver import fetch_with_stealth_browser
+            r = fetch_with_stealth_browser("https://jobsgo.vn/sitemap-job.xml")
+        if r and r.status_code == 200:
             found_urls = re.findall(r"<loc>(https://jobsgo\.vn/viec-lam/[^<]+)</loc>", r.text)
             for u in found_urls:
                 u_clean = u.split("?")[0].strip()

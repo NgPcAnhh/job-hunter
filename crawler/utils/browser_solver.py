@@ -1,9 +1,11 @@
 """
-Browser Solver Module (Playwright + Stealth)
+Browser Solver Module (Playwright + Stealth + Virtual Headful Support)
 Tự động giải quyết Cloudflare Turnstile / Managed Challenge trên môi trường Cloud (GitHub Actions IP).
 Được thiết kế riêng để dự phòng cho các website tuyển dụng bảo vệ bởi Cloudflare WAF (TopCV, JobsGO).
 """
 
+import os
+import platform
 import logging
 import time
 from typing import Optional, Dict, Any, List
@@ -44,36 +46,51 @@ class BrowserResponse:
 
 class StealthBrowserSolver:
     """
-    Quản lý Chromium Headless kèm cơ chế Anti-Detection Stealth để vượt Cloudflare Turnstile.
+    Quản lý Chromium kèm cơ chế Anti-Detection Stealth để vượt Cloudflare Turnstile.
+    Hỗ trợ cả môi trường Headless (Windows/Mac) lẫn Xvfb Virtual Display (Linux/GitHub Actions).
     """
 
-    def __init__(self, headless: bool = True):
-        self.headless = headless
+    def __init__(self):
         self._playwright = None
         self._browser: Optional[Browser] = None
         self._context: Optional[BrowserContext] = None
         self._stealth = Stealth() if HAS_STEALTH else None
+        self.is_linux = platform.system().lower() == "linux"
+        # Trên Linux nếu có DISPLAY (từ xvfb-run), chạy headless=False để tránh 100% cờ headless của Cloudflare
+        self.has_display = bool(os.getenv("DISPLAY"))
+        self.use_headless = not (self.is_linux and self.has_display)
 
     def _ensure_browser(self):
         if not HAS_PLAYWRIGHT:
             raise RuntimeError("Playwright chưa được cài đặt trong môi trường!")
         if self._playwright is None:
             self._playwright = sync_playwright().start()
+
         if self._browser is None:
-            self._browser = self._playwright.chromium.launch(
-                headless=self.headless,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-infobars",
-                    "--disable-dev-shm-usage",
-                    "--window-size=1920,1080",
-                ]
+            args = [
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-infobars",
+                "--disable-dev-shm-usage",
+                "--window-size=1920,1080",
+            ]
+            logger.info(
+                f"🚀 [Browser Solver] Khởi chạy Chromium (OS: {platform.system()}, Headless: {self.use_headless}, Display: {self.has_display})..."
             )
+            self._browser = self._playwright.chromium.launch(
+                headless=self.use_headless,
+                args=args,
+            )
+
         if self._context is None:
+            if self.is_linux:
+                ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            else:
+                ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
             self._context = self._browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                user_agent=ua,
                 viewport={"width": 1920, "height": 1080},
                 locale="vi-VN",
                 timezone_id="Asia/Ho_Chi_Minh",
@@ -95,12 +112,13 @@ class StealthBrowserSolver:
 
     def fetch_url(self, url: str, timeout_sec: int = 35) -> Optional[BrowserResponse]:
         """
-        Tải URL qua Stealth Headless Chromium. Tự động phát hiện và vượt qua Cloudflare Turnstile.
+        Tải URL qua Stealth Chromium. Tự động phát hiện và vượt qua Cloudflare Turnstile.
         """
         if not HAS_PLAYWRIGHT:
             logger.warning("⚠️ Playwright chưa sẵn sàng. Bỏ qua browser solver.")
             return None
 
+        page = None
         try:
             self._ensure_browser()
             page = self._context.new_page()
@@ -108,51 +126,66 @@ class StealthBrowserSolver:
             if self._stealth:
                 self._stealth.apply_stealth_sync(page)
 
-            logger.info(f"🌐 [Stealth Browser] Đang tải qua Chromium: {url}")
+            logger.info(f"🌐 [Stealth Browser] Đang tải URL: {url}")
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_sec * 1000)
             page.wait_for_timeout(2000)
 
             # Kiểm tra xem có gặp Cloudflare Turnstile Challenge ("Just a moment...") không
-            for attempt in range(6):
+            for attempt in range(8):
                 title = page.title().lower()
-                content_preview = page.content()[:2500].lower()
+                content_preview = page.content()[:3000].lower()
 
-                is_challenge = "just a moment..." in title or "cf-turnstile" in content_preview or "cloudflare" in title
+                is_challenge = (
+                    "just a moment..." in title
+                    or "cf-turnstile" in content_preview
+                    or "cloudflare" in title
+                    or "attention required!" in title
+                )
                 if not is_challenge:
                     break
 
-                logger.info(f"⏳ [Cloudflare Turnstile] Đang chờ xác thực bảo mật ({attempt + 1}/6)...")
+                logger.info(f"⏳ [Cloudflare Turnstile] Đang xử lý thử thách bảo mật ({attempt + 1}/8)...")
 
-                # Thử tìm và click vào checkbox Turnstile nếu có iframe
+                # Tìm iframe Turnstile và mô phỏng tương tác chuột thực sự
                 try:
-                    turnstile_frames = page.frames
-                    for f in turnstile_frames:
+                    for f in page.frames:
                         if "challenges.cloudflare.com" in f.url:
-                            checkbox = f.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label")
-                            if checkbox.count() > 0:
-                                checkbox.first.click(timeout=1500)
-                                logger.info("👆 [Turnstile Solver] Đã click vào checkbox xác thực!")
-                                break
-                except Exception:
-                    pass
+                            logger.info("🔍 [Turnstile] Phát hiện iframe Cloudflare Challenge...")
+                            body = f.locator("body")
+                            if body.count() > 0:
+                                box = body.bounding_box()
+                                if box:
+                                    click_x = box["x"] + 30
+                                    click_y = box["y"] + box["height"] / 2
+                                    page.mouse.click(click_x, click_y)
+                                    logger.info(f"👆 [Turnstile] Đã click vào vị trí ({click_x:.1f}, {click_y:.1f})!")
+                                    break
+                except Exception as click_err:
+                    logger.debug(f"Lỗi click iframe: {click_err}")
 
-                page.wait_for_timeout(2500)
+                page.wait_for_timeout(2000)
 
             final_title = page.title()
             final_html = page.content()
             cookies = self._context.cookies()
 
             page.close()
+            page = None
 
             if "just a moment..." in final_title.lower() and len(final_html) < 4000:
-                logger.warning(f"🛡️ [Stealth Browser] Cloudflare Turnstile vẫn chưa được giải quyết tại {url}.")
+                logger.warning(f"🛡️ [Stealth Browser] Cloudflare Turnstile chưa giải quyết được tại {url}.")
                 return BrowserResponse(final_html, status_code=403, url=url, cookies=cookies)
 
-            logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Tiêu đề: '{final_title[:50]}'")
+            logger.info(f"🎉 [Stealth Browser] Vượt Cloudflare thành công! Tiêu đề: '{final_title[:50]}' (Độ dài: {len(final_html):,} bytes)")
             return BrowserResponse(final_html, status_code=200, url=url, cookies=cookies)
 
         except Exception as err:
             logger.warning(f"⚠️ [Stealth Browser] Lỗi khi tải URL {url}: {err}")
+            if page:
+                try:
+                    page.close()
+                except Exception:
+                    pass
             return None
 
 
@@ -166,7 +199,7 @@ def fetch_with_stealth_browser(url: str, timeout_sec: int = 35) -> Optional[Brow
     """
     global _global_solver
     if _global_solver is None:
-        _global_solver = StealthBrowserSolver(headless=True)
+        _global_solver = StealthBrowserSolver()
     return _global_solver.fetch_url(url, timeout_sec=timeout_sec)
 
 
