@@ -1,4 +1,4 @@
-name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet, Joboko, 123Job, TopDev)
+name: Cloud Jobs
 
 'on':
   schedule:
