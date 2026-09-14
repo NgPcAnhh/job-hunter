@@ -23,8 +23,13 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Union
 from urllib.parse import urljoin
+try:
+    from curl_cffi import requests as curl_requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    import requests as curl_requests
+    HAS_CURL_CFFI = False
 
-import httpx
 from bs4 import BeautifulSoup
 
 # Đảm bảo import được crawler.db khi chạy trực tiếp hoặc module
@@ -89,17 +94,40 @@ def get_random_headers() -> Dict[str, str]:
     }
 
 
+def check_is_captcha_or_challenge(response) -> bool:
+    """Kiểm tra xem phản hồi có phải là trang thử thách Bot / Captcha không."""
+    if response is None:
+        return False
+    if response.status_code in [403, 429]:
+        return True
+    if "/recaptcha" in str(getattr(response, "url", "")):
+        return True
+    lower_text = response.text.lower()
+    challenge_indicators = [
+        "cf-turnstile",
+        "cf-challenge",
+        "just a moment...",
+        "recaptcha_confirm_form",
+        "h-captcha",
+        "challenge-platform",
+        "attention required! | cloudflare",
+        "access denied",
+    ]
+    return any(ind in lower_text for ind in challenge_indicators)
+
+
 def safe_request(
-    client: httpx.Client,
+    session: Any,
     url: str,
     max_retries: int = 4,
-    initial_backoff: float = 8.0,
+    initial_backoff: float = 4.0,
     referer: Optional[str] = None
-) -> Optional[httpx.Response]:
+) -> Optional[Any]:
     """
     Hàm gửi request an toàn bảo vệ chống chặn IP (Anti-Ban / Anti-Tarpit):
+    - Sử dụng curl_cffi giả lập TLS Chrome 120.
     - Tự động luân phiên User-Agent và Referer.
-    - Phát hiện Captcha (recaptcha/hCaptcha). Khi phát hiện, tự động 'ngủ hạ nhiệt' (Backoff) và thử lại.
+    - Phát hiện Captcha/Challenge. Khi phát hiện, tự động 'ngủ hạ nhiệt' (Backoff) và thử lại.
     - Xử lý timeout/drop connection tự động bằng Exponential Backoff.
     """
     backoff = initial_backoff
@@ -110,22 +138,19 @@ def safe_request(
             headers["Referer"] = referer
 
         try:
-            response = client.get(url, headers=headers)
+            if HAS_CURL_CFFI:
+                response = session.get(url, headers=headers, timeout=30, impersonate="chrome120")
+            else:
+                response = session.get(url, headers=headers, timeout=30)
 
             # Kiểm tra xem website có trả về trang kiểm tra Bot / Captcha không
-            is_captcha = (
-                "recaptcha_confirm_form" in response.text
-                or "h-captcha" in response.text
-                or "/recaptcha" in str(response.url)
-            )
-
-            if is_captcha:
+            if check_is_captcha_or_challenge(response):
                 logger.warning(
-                    f"⚠️  [Anti-Ban] Website yêu cầu xác thực Bot tại lần thử #{attempt}/{max_retries}. "
+                    f"⚠️  [Anti-Ban] Website yêu cầu xác thực Bot/Challenge tại lần thử #{attempt}/{max_retries}. "
                     f"Tự động tạm dừng {backoff:.1f}s để giải phóng cờ IP..."
                 )
                 time.sleep(backoff)
-                backoff *= 2  # Tăng gấp đôi thời gian chờ
+                backoff *= 2
                 continue
 
             if response.status_code == 200:
@@ -139,12 +164,20 @@ def safe_request(
                 backoff *= 2
                 continue
 
+            if response.status_code == 403:
+                logger.warning(
+                    f"⚠️  [Forbidden HTTP 403] Tường lửa nghi ngờ bot. Tạm dừng {backoff:.1f}s trước khi thử lại..."
+                )
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+
             logger.warning(f"Request {url} trả về HTTP {response.status_code}")
             return response
 
-        except (httpx.ReadTimeout, httpx.ConnectTimeout, httpx.RemoteProtocolError, httpx.RequestError) as e:
+        except Exception as e:
             logger.warning(
-                f"⚠️  [Kết nối bị giữ/Timeout] Lần #{attempt}/{max_retries}: {type(e).__name__}. "
+                f"⚠️  [Kết nối bị giữ/Timeout] Lần #{attempt}/{max_retries}: {type(e).__name__} - {e}. "
                 f"Đang chờ hạ nhiệt {backoff:.1f}s..."
             )
             time.sleep(backoff)
@@ -400,14 +433,13 @@ def crawl(
     crawled_jobs: List[Dict[str, Any]] = []
     visited_job_urls = set()
 
-    client_kwargs: Dict[str, Any] = {
-        "timeout": 30.0,
-        "follow_redirects": True,
-    }
-    if proxy:
-        client_kwargs["proxy"] = proxy
+    if HAS_CURL_CFFI:
+        session = curl_requests.Session(impersonate="chrome120")
+    else:
+        session = curl_requests.Session()
 
-    client = httpx.Client(**client_kwargs)
+    if proxy:
+        session.proxies = {"http": proxy, "https": proxy}
 
     current_page = 1
     job_counter = 0
@@ -421,7 +453,7 @@ def crawl(
             page_url = f"{base_url_with_filter}&page={current_page}"
             logger.info(f"\n📄 Đang tải trang danh sách #{current_page}: {page_url}")
 
-            res = safe_request(client, page_url, max_retries=3, initial_backoff=5.0)
+            res = safe_request(session, page_url, max_retries=3, initial_backoff=5.0)
             if not res or res.status_code != 200:
                 logger.warning(f"Không thể tải trang #{current_page}. Kết thúc crawl phân trang.")
                 break
@@ -465,7 +497,7 @@ def crawl(
                     sleep_time = random.uniform(min_delay, max_delay)
                     time.sleep(sleep_time)
 
-                detail_res = safe_request(client, j_url, max_retries=3, initial_backoff=6.0, referer=page_url)
+                detail_res = safe_request(session, j_url, max_retries=3, initial_backoff=6.0, referer=page_url)
                 if not detail_res or detail_res.status_code != 200:
                     logger.warning(f"  [#{idx}/{len(new_job_urls)}] Bỏ qua job {j_url}")
                     continue
@@ -491,7 +523,7 @@ def crawl(
             current_page += 1
 
     finally:
-        client.close()
+        session.close()
 
     if crawled_jobs:
         save_data(crawled_jobs)
