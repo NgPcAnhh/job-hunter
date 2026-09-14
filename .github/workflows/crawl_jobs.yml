@@ -13,9 +13,9 @@ name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet
     # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
     inputs:
       sites:
-        description: 'Tên spider chạy trên Cloud (mặc định: 8 trang chạy tốt trên cloud)'
+        description: 'Tên spider chạy trên Cloud (mặc định: 6 trang chạy tốt trên cloud)'
         required: false
-        default: 'vietnamworks,vieclam24h,careerlink,careerviet,joboko,job123,timviec365,topdev'
+        default: 'vietnamworks,careerlink,careerviet,joboko,job123,topdev'
       pages:
         description: 'Số lượng trang muốn cào cho mỗi website (mặc định: 10)'
         required: false
@@ -91,7 +91,7 @@ jobs:
           # Xây dựng câu lệnh chạy linh hoạt theo tham số kích hoạt
           SELECTED_SITES="${{ inputs.sites }}"
           if [ -z "$SELECTED_SITES" ]; then
-            SELECTED_SITES="vietnamworks,vieclam24h,careerlink,careerviet,joboko,job123,timviec365,topdev"
+            SELECTED_SITES="vietnamworks,careerlink,careerviet,joboko,job123,topdev"
           fi
           
           CMD="python crawler/main.py --site $SELECTED_SITES"

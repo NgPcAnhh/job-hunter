@@ -1,12 +1,12 @@
-name: Manual Local Crawlers - TopCV & JobsGO (Self-Hosted Runner)
+name: Manual Local Crawlers - TopCV, JobsGO, Vieclam24h, Timviec365 (Self-Hosted Runner)
 
 on:
   workflow_dispatch:
     inputs:
       sites:
-        description: 'Tên spider cần chạy trên máy local (mặc định: topcv,jobsgo)'
+        description: 'Tên spider cần chạy trên máy local (mặc định: topcv,jobsgo,vieclam24h,timviec365)'
         required: false
-        default: 'topcv,jobsgo'
+        default: 'topcv,jobsgo,vieclam24h,timviec365'
       pages:
         description: 'Số lượng trang muốn cào cho mỗi website (mặc định: 10)'
         required: false
@@ -72,7 +72,7 @@ jobs:
         run: |
           SITES="${{ inputs.sites }}"
           if [ -z "$SITES" ]; then
-            SITES="topcv,jobsgo"
+            SITES="topcv,jobsgo,vieclam24h,timviec365"
           fi
           CMD="python crawler/main.py --site $SITES"
           if [ -n "${{ inputs.pages }}" ]; then
