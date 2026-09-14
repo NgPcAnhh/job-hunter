@@ -533,6 +533,18 @@ def crawl(
                         logger.info(f"✅ Playwright Fallback thành công: tìm thấy {len(pw_urls)} jobs!")
                         job_urls = pw_urls
 
+                # Nếu URL danh mục không ra trên Playwright, thử URL search tổng
+                if not job_urls:
+                    alt_pw_url = f"https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19&page={current_page}"
+                    logger.info(f"⚡ Thử fallback Playwright với search URL: {alt_pw_url}...")
+                    alt_pw_html = fetch_list_page_with_playwright(alt_pw_url)
+                    if alt_pw_html:
+                        alt_pw_soup = BeautifulSoup(alt_pw_html, "html.parser")
+                        alt_pw_urls = extract_job_urls_from_page(alt_pw_soup)
+                        if alt_pw_urls:
+                            logger.info(f"✅ Playwright Search Fallback thành công: tìm thấy {len(alt_pw_urls)} jobs!")
+                            job_urls = alt_pw_urls
+
             if not job_urls:
                 logger.info(f"Không tìm thấy việc làm nào ở trang #{current_page}. Đã cào hết toàn bộ trang!")
                 break
