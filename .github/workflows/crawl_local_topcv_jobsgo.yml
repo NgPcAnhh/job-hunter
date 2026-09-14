@@ -130,7 +130,7 @@ jobs:
                   f.write(f'\n> ⚠️ Lỗi truy vấn: {e}\n')
           EOF
 
-      - name: 📱 Optional: Notify Telegram on Finish
+      - name: "📱 Optional: Notify Telegram on Finish"
         if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
