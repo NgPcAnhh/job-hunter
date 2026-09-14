@@ -72,17 +72,14 @@ OUTPUT_CSV = OUTPUT_DIR / "vieclam24h.csv"
 OUTPUT_JSON = OUTPUT_DIR / "vieclam24h.json"
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.6; rv:129.0) Gecko/20100101 Firefox/129.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 ]
 
 
 def get_random_headers(referer: Optional[str] = None) -> Dict[str, str]:
-    """Tạo bộ HTTP headers hoàn chỉnh mô phỏng trình duyệt Chrome người thật."""
+    """Tạo bộ HTTP headers hoàn chỉnh mô phỏng trình duyệt Chrome người thật, đồng bộ Client Hints."""
     headers = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -94,7 +91,7 @@ def get_random_headers(referer: Optional[str] = None) -> Dict[str, str]:
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "same-origin" if referer else "none",
         "Sec-Fetch-User": "?1",
-        "Sec-Ch-Ua": '"Not?A_Brand";v="99", "Chromium";v="128", "Google Chrome";v="128"',
+        "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
         "Sec-Ch-Ua-Mobile": "?0",
         "Sec-Ch-Ua-Platform": '"Windows"',
     }
@@ -220,6 +217,134 @@ def safe_request(
 
     logger.error(f"❌ Không thể tải {url} sau {max_retries} lần thử.")
     return None
+
+
+def extract_jobs_from_next_data(html: str, base_url: str = BASE_DOMAIN) -> List[Dict[str, Any]]:
+    """
+    Trích xuất danh sách việc làm trực tiếp từ thẻ <script id="__NEXT_DATA__">.
+    Dữ liệu có sẵn cấu trúc hoàn chỉnh bao gồm tiêu đề, công ty, lương, địa điểm, yêu cầu...
+    Giúp cào 30 jobs/trang chỉ với 1 request duy nhất mà không cần tải 30 trang chi tiết.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    nxt = soup.find("script", id="__NEXT_DATA__")
+    if not nxt or not nxt.text:
+        return []
+
+    try:
+        data = json.loads(nxt.text)
+        items = data.get("props", {}).get("initialState", {}).get("api", {}).get("getJobList", {}).get("data", {}).get("items", [])
+        if not items:
+            return []
+
+        jobs: List[Dict[str, Any]] = []
+        for item in items:
+            jid = item.get("id")
+            if not jid:
+                continue
+            slug = item.get("title_slug") or "viec-lam"
+            job_url = f"{base_url.rstrip('/')}/{slug}-id{jid}.html"
+
+            title = item.get("title") or ""
+            emp_info = item.get("employer_info") or {}
+            comp_name = emp_info.get("name") or ""
+            comp_logo = emp_info.get("logo") or ""
+            comp_url = emp_info.get("website") or None
+
+            # Format lương
+            sal_min = item.get("salary_min")
+            sal_max = item.get("salary_max")
+            if not sal_min and not sal_max:
+                salary = "Thoả thuận"
+            elif sal_min and sal_max:
+                salary = f"{sal_min/1e6:g} - {sal_max/1e6:g} triệu VND"
+            elif sal_min:
+                salary = f"Từ {sal_min/1e6:g} triệu VND"
+            else:
+                salary = f"Tới {sal_max/1e6:g} triệu VND"
+
+            # Địa điểm làm việc
+            places = item.get("places") or []
+            if isinstance(places, str):
+                try:
+                    places = json.loads(places)
+                except Exception:
+                    places = []
+
+            loc_list = []
+            short_locs = set()
+            for p in places:
+                if isinstance(p, dict):
+                    addr = p.get("address")
+                    if addr:
+                        loc_list.append(addr)
+                    p_name = p.get("province_name")
+                    if p_name:
+                        short_locs.add(p_name)
+
+            workplace = "\n".join(loc_list) if loc_list else ""
+            location_short = ", ".join(short_locs) if short_locs else "Toàn quốc"
+
+            # Yêu cầu & mô tả
+            raw_req = item.get("other_requirement") or item.get("other_requirement_html") or ""
+            job_req = BeautifulSoup(raw_req, "html.parser").get_text(separator="\n", strip=True) if raw_req else ""
+            job_desc = title
+
+            # Hạn nộp hồ sơ & ngày đăng
+            import datetime
+            expired_ts = item.get("resume_apply_expired")
+            deadline = ""
+            if expired_ts and isinstance(expired_ts, (int, float)):
+                try:
+                    deadline = datetime.datetime.fromtimestamp(expired_ts).strftime("%d/%m/%Y")
+                except Exception:
+                    deadline = ""
+
+            created_ts = item.get("created_at")
+            posted_date = ""
+            if created_ts and isinstance(created_ts, (int, float)):
+                try:
+                    posted_date = datetime.datetime.fromtimestamp(created_ts).strftime("%d/%m/%Y")
+                except Exception:
+                    posted_date = ""
+
+            # Keywords
+            smart_tags = item.get("smart_tags") or []
+            tags = [t.get("name") for t in smart_tags if isinstance(t, dict) and t.get("name")]
+            keyword = " ".join([f"{{{t}}}" for t in tags]) if tags else "N/A"
+
+            jobs.append({
+                "job_url": job_url,
+                "source": SOURCE_NAME,
+                "job_title": title,
+                "company_name": comp_name,
+                "company_url": comp_url,
+                "company_logo": comp_logo,
+                "salary": salary,
+                "experience": str(item.get("experience_range", "")) if item.get("experience_range") else "",
+                "level": str(item.get("level_requirement", "")) if item.get("level_requirement") else "",
+                "work_type": "Toàn thời gian" if item.get("working_method") == 1 else "Bán thời gian",
+                "education": str(item.get("degree_requirement", "")) if item.get("degree_requirement") else "",
+                "industry": "Công nghệ thông tin",
+                "location_short": location_short,
+                "workplace_detail": workplace,
+                "working_time": None,
+                "posted_date": posted_date,
+                "deadline": deadline,
+                "keyword": keyword,
+                "job_description": job_desc,
+                "job_requirements": job_req,
+                "benefits": "",
+                "extra_info": {
+                    "id": jid,
+                    "gender": item.get("gender"),
+                    "vacancy_quantity": item.get("vacancy_quantity"),
+                    "probation_duration": item.get("probation_duration"),
+                },
+            })
+        return jobs
+    except Exception as e:
+        logger.warning(f"Lỗi khi giải mã __NEXT_DATA__: {e}")
+        return []
 
 
 def get_job_links_from_page(html: str, base_url: str = BASE_DOMAIN) -> List[str]:
@@ -607,7 +732,35 @@ def crawl(
 
         last_referer = list_url
 
-        # Bóc tách danh sách link bài viết
+        # 1. Ưu tiên trích xuất trực tiếp toàn bộ dữ liệu cấu trúc qua __NEXT_DATA__ (chỉ 1 request/trang)
+        next_jobs = extract_jobs_from_next_data(res.text, base_url=BASE_DOMAIN)
+        if next_jobs:
+            if limit_jobs_per_page is not None and limit_jobs_per_page > 0:
+                next_jobs = next_jobs[:limit_jobs_per_page]
+
+            new_added = 0
+            for job_data in next_jobs:
+                j_url = job_data.get("job_url")
+                if j_url and j_url not in visited_urls:
+                    visited_urls.add(j_url)
+                    all_jobs.append(job_data)
+                    new_added += 1
+                    job_counter += 1
+                    title_disp = (job_data.get("job_title") or "")[:35]
+                    comp_disp = (job_data.get("company_name") or "N/A")[:25]
+                    kw_disp = job_data.get("keyword") or "N/A"
+                    logger.info(
+                        f"  ✅ [Next Data] {title_disp} | Công ty: {comp_disp} | "
+                        f"Keyword: {kw_disp} | Lương: {job_data['salary']}"
+                    )
+
+            logger.info(f"🎯 Đã trích xuất trực tiếp {new_added} jobs từ __NEXT_DATA__ trang #{current_page}.")
+            save_data(all_jobs)
+            current_page += 1
+            time.sleep(random.uniform(min_delay, max_delay))
+            continue
+
+        # 2. Fallback bóc tách danh sách link bài viết nếu __NEXT_DATA__ không có sẵn
         job_urls = get_job_links_from_page(res.text, base_url=BASE_DOMAIN)
         if not job_urls:
             logger.info(f"Không còn bài tuyển dụng nào ở trang #{current_page}. Đã duyệt hết toàn bộ danh sách tin!")

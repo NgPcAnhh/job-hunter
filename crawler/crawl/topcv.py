@@ -86,9 +86,6 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.130 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 ]
 
 
@@ -312,13 +309,38 @@ def extract_job_links_and_next_page(html: str, base_url: str = BASE_DOMAIN) -> T
             continue
         seen.add(full_job_url)
 
-        # Tên công ty từ danh sách (Ảnh 2)
+        # Metadata từ thẻ Card trên trang danh sách
         company_elem = card.select_one("a.company, a.company-name, [class*='company']")
         company_name_list = safe_text(company_elem)
+
+        title_elem = card.select_one("h3.title a span, h3.title a, div.title-block a")
+        job_title_card = safe_text(title_elem)
+        if not job_title_card and a_title:
+            job_title_card = a_title.get("title") or a_title.get("aria-label") or safe_text(a_title)
+
+        salary_elem = card.select_one(".title-salary, .salary, [class*='salary']")
+        salary_card = safe_text(salary_elem) or "Thoả thuận"
+
+        loc_elem = card.select_one(".address, .location, [class*='address'], [class*='city']")
+        loc_card = safe_text(loc_elem)
+
+        exp_elem = card.select_one(".exp, [class*='exp']")
+        exp_card = safe_text(exp_elem)
+
+        avatar_img = card.select_one("div.avatar img, img[class*='avatar'], img")
+        raw_logo = ""
+        if avatar_img:
+            raw_logo = avatar_img.get("data-src") or avatar_img.get("src") or ""
+        company_logo_card = clean_image_url(raw_logo)
 
         jobs_info.append({
             "job_url": full_job_url,
             "company_name_list": company_name_list,
+            "job_title_card": job_title_card,
+            "salary_card": salary_card,
+            "location_card": loc_card,
+            "experience_card": exp_card,
+            "company_logo_card": company_logo_card,
         })
 
     # 2. Tìm thẻ nút Next trang bên phải: thẻ a bên trong ul.pagination có chứa icon i.fa-chevron-right (Ảnh 1)
@@ -716,7 +738,35 @@ def crawl(
             detail_res = safe_request(session, job_url, referer=current_url)
 
             if not detail_res or detail_res.status_code != 200:
-                logger.warning(f"  ❌ Bỏ qua job do không tải được: {job_url}")
+                logger.warning(
+                    f"  ⚠️ Trang chi tiết không khả dụng (Status: {detail_res.status_code if detail_res else 'None'}). "
+                    f"Tự động lưu trữ thông tin trích xuất từ List Card: {job_url}"
+                )
+                job_data = {
+                    "job_url": job_url,
+                    "source": SOURCE_NAME,
+                    "job_title": item.get("job_title_card") or "Việc làm IT",
+                    "company_name": item.get("company_name_list") or "",
+                    "company_url": None,
+                    "company_logo": item.get("company_logo_card") or "",
+                    "salary": item.get("salary_card") or "Thoả thuận",
+                    "experience": item.get("experience_card") or "",
+                    "level": "",
+                    "work_type": "Toàn thời gian",
+                    "education": "",
+                    "industry": "Công nghệ thông tin",
+                    "location_short": item.get("location_card") or "",
+                    "workplace_detail": item.get("location_card") or "",
+                    "working_time": None,
+                    "posted_date": "",
+                    "deadline": "",
+                    "keyword": "N/A",
+                    "job_description": item.get("job_title_card") or "",
+                    "job_requirements": "",
+                    "benefits": "",
+                    "extra_info": {"extracted_from": "list_card"},
+                }
+                all_jobs.append(job_data)
                 continue
 
             try:
@@ -753,18 +803,19 @@ def crawl(
 
 
 if __name__ == "__main__":
-    # CẤU HÌNH KHI CHẠY TRỰC TIẾP:
-    # - page:
-    #     + Nếu đặt "max": cào liên tục tất cả các trang theo nút Next cho tới khi hết bài đăng.
-    #     + Nếu đặt số (ví dụ: page=1 hoặc page=10): chỉ cào tối đa số trang đó.
-    # - max_jobs_per_page:
-    #     + Nếu đặt "max" hoặc None: cào TOÀN BỘ jobs trên mỗi trang (50 jobs/trang).
-    #     + Nếu đặt số (ví dụ: 3, 5): giới hạn số jobs lấy trong 1 trang để test nhanh.
-    # - min_delay, max_delay: Thời gian nghỉ ngẫu nhiên giữa các job (chống chặn IP)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="TopCV Job Crawler")
+    parser.add_argument("--pages", "--page", default="10", help="Số trang muốn cào (số hoặc 'max')")
+    parser.add_argument("--jobs-per-page", default="max", help="Số job mỗi trang (số hoặc 'max')")
+    args = parser.parse_args()
+
+    pages_val = int(args.pages) if args.pages.isdigit() else args.pages
+    jobs_per_page_val = int(args.jobs_per_page) if args.jobs_per_page.isdigit() else args.jobs_per_page
 
     results = crawl(
-        page=10,                      # Đặt số trang (ví dụ: page=1) hoặc "max" để cào hết toàn bộ các trang
-        max_jobs_per_page="max",     # "max" để lấy TOÀN BỘ jobs trong 1 trang (50 jobs/trang), hoặc đặt số (ví dụ: 3)
+        page=pages_val,
+        max_jobs_per_page=jobs_per_page_val,
         min_delay=2.0,
         max_delay=3.5,
     )

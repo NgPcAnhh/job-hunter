@@ -71,17 +71,14 @@ OUTPUT_CSV = OUTPUT_DIR / "jobsgo.csv"
 OUTPUT_JSON = OUTPUT_DIR / "jobsgo.json"
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14.6; rv:129.0) Gecko/20100101 Firefox/129.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 ]
 
 
 def get_random_headers(referer: Optional[str] = None) -> Dict[str, str]:
-    """Tạo bộ HTTP headers hoàn chỉnh mô phỏng trình duyệt Chrome người thật."""
+    """Tạo bộ HTTP headers hoàn chỉnh mô phỏng trình duyệt Chrome người thật, đồng bộ Client Hints."""
     headers = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -93,7 +90,7 @@ def get_random_headers(referer: Optional[str] = None) -> Dict[str, str]:
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "same-origin" if referer else "none",
         "Sec-Fetch-User": "?1",
-        "Sec-Ch-Ua": '"Not?A_Brand";v="99", "Chromium";v="128", "Google Chrome";v="128"',
+        "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
         "Sec-Ch-Ua-Mobile": "?0",
         "Sec-Ch-Ua-Platform": '"Windows"',
     }
@@ -281,10 +278,18 @@ def get_job_cards_metadata(html: str, base_url: str = BASE_DOMAIN) -> Dict[str, 
                 if raw_logo_src and ("employer" in raw_logo_src or "jobsgo.vn" in raw_logo_src):
                     card_logo = urljoin(base_url, raw_logo_src.strip())
 
+            sal_elem = col.select_one(".salary, .job-salary, [class*='salary']")
+            card_salary = safe_text(sal_elem) or "Thoả thuận"
+
+            loc_elem = col.select_one(".location, .job-location, [class*='location'], [class*='address']")
+            card_location = safe_text(loc_elem)
+
             metadata_map[full_url] = {
                 "job_title_list": title_text,
                 "company_name": company_name,
                 "company_logo": card_logo,
+                "salary": card_salary,
+                "location": card_location,
             }
         except Exception:
             continue
@@ -666,7 +671,37 @@ def crawl(
             detail_res = safe_request(session, job_url, referer=list_url)
 
             if not detail_res or detail_res.status_code != 200:
-                logger.warning(f"  ❌ Bỏ qua job do không tải được: {job_url}")
+                meta = cards_metadata.get(job_url, {})
+                logger.warning(
+                    f"  ⚠️ Trang chi tiết không khả dụng (Status: {detail_res.status_code if detail_res else 'None'}). "
+                    f"Tự động lưu trữ thông tin trích xuất từ List Card: {job_url}"
+                )
+                job_data = {
+                    "job_url": job_url,
+                    "source": SOURCE_NAME,
+                    "job_title": meta.get("job_title_list") or "Việc làm IT",
+                    "company_name": meta.get("company_name", ""),
+                    "company_url": None,
+                    "company_logo": meta.get("company_logo", ""),
+                    "salary": meta.get("salary", "Thoả thuận"),
+                    "experience": "",
+                    "level": "",
+                    "work_type": "Toàn thời gian",
+                    "education": "",
+                    "industry": "Công nghệ thông tin",
+                    "location_short": meta.get("location", ""),
+                    "workplace_detail": meta.get("location", ""),
+                    "working_time": None,
+                    "posted_date": "",
+                    "deadline": "",
+                    "keyword": "N/A",
+                    "job_description": meta.get("job_title_list") or "",
+                    "job_requirements": "",
+                    "benefits": "",
+                    "job_title_list": meta.get("job_title_list", ""),
+                    "extra_info": {"extracted_from": "list_card"},
+                }
+                all_jobs.append(job_data)
                 continue
 
             try:
@@ -703,18 +738,20 @@ def crawl(
 
 
 if __name__ == "__main__":
-    # TÙY CHỌN CẤU HÌNH KHI CHẠY:
-    # - page: 
-    #     + Mặc định: 10 trang theo yêu cầu.
-    #     + Nếu đặt "max": cào liên tục tất cả các trang cho tới khi hết tin tuyển dụng thì thôi.
-    #     + Nếu đặt số (ví dụ: page=10): chỉ cào từ trang 1 đến trang số 10.
-    # - max_jobs_per_page: Số job tối đa mỗi trang ("max" = cào TOÀN BỘ jobs trên trang, hoặc đặt số nguyên)
-    # - min_delay, max_delay: Thời gian nghỉ ngẫu nhiên giữa các job (chống chặn IP)
-    
+    import argparse
+
+    parser = argparse.ArgumentParser(description="JobsGO Job Crawler")
+    parser.add_argument("--pages", "--page", default="10", help="Số trang muốn cào (số hoặc 'max')")
+    parser.add_argument("--jobs-per-page", default="max", help="Số job mỗi trang (số hoặc 'max')")
+    args = parser.parse_args()
+
+    pages_val = int(args.pages) if args.pages.isdigit() else args.pages
+    jobs_per_page_val = int(args.jobs_per_page) if args.jobs_per_page.isdigit() else args.jobs_per_page
+
     results = crawl(
-        page=10,                 # Mặc định cào 10 trang theo yêu cầu
-        max_jobs_per_page="max", # Mặc định cào toàn bộ job trên mỗi trang
+        page=pages_val,
+        max_jobs_per_page=jobs_per_page_val,
         min_delay=1.2,
         max_delay=2.5,
     )
-    print(f"\n[HOÀN TẤT] Đã trích xuất tổng cộng {len(results)} jobs.")
+    print(f"\n[HOÀN TẤT] Đã trích xuất tổng cộng {len(results)} jobs từ JobsGO.")
