@@ -628,22 +628,20 @@ def save_data(jobs: List[Dict[str, Any]], csv_path: Path = OUTPUT_CSV, json_path
 def create_session(proxy: Optional[str] = None) -> Any:
     """
     Tạo Client Session lưu trữ Cookies liên tục giữa các lượt request,
-    kết hợp giả lập TLS Fingerprint của Chrome thật để tránh bị hệ thống anti-bot phát hiện.
+    kết hợp giả lập TLS Fingerprint của Chrome thật để kết nối trực tiếp ổn định.
     """
-    resolved_proxy = proxy or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
-
     if HAS_CURL_CFFI:
         session_kwargs: Dict[str, Any] = {
             "impersonate": "chrome120",
             "timeout": 30,
         }
-        if resolved_proxy:
-            session_kwargs["proxies"] = {"http": resolved_proxy, "https": resolved_proxy}
+        if proxy:
+            session_kwargs["proxies"] = {"http": proxy, "https": proxy}
         return curl_requests.Session(**session_kwargs)
     else:
         session = curl_requests.Session()
-        if resolved_proxy:
-            session.proxies = {"http": resolved_proxy, "https": resolved_proxy}
+        if proxy:
+            session.proxies = {"http": proxy, "https": proxy}
         return session
 
 
