@@ -1,21 +1,12 @@
-name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet, Joboko)
+name: Manual Local Crawlers - TopCV & JobsGO (Self-Hosted Runner)
 
-'on':
-  schedule:
-    # Chạy tự động định kỳ 6 tiếng 1 lần (4 lần/ngày theo giờ Việt Nam UTC+7):
-    # - 17:00 UTC = 00:00 (12h đêm) giờ Việt Nam
-    # - 23:00 UTC = 06:00 (6h sáng) giờ Việt Nam
-    # - 05:00 UTC = 12:00 (12h trưa) giờ Việt Nam
-    # - 11:00 UTC = 18:00 (6h tối) giờ Việt Nam
-    - cron: '0 5,11,17,23 * * *'
-
+on:
   workflow_dispatch:
-    # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
     inputs:
       sites:
-        description: 'Tên spider chạy trên Cloud (mặc định: 5 trang chạy tốt trên cloud)'
+        description: 'Tên spider cần chạy trên máy local (mặc định: topcv,jobsgo)'
         required: false
-        default: 'vietnamworks,vieclam24h,careerlink,careerviet,joboko'
+        default: 'topcv,jobsgo'
       pages:
         description: 'Số lượng trang muốn cào cho mỗi website (mặc định: 10)'
         required: false
@@ -29,25 +20,25 @@ name: Scheduled Cloud Crawlers (VietnamWorks, Vieclam24h, CareerLink, CareerViet
         required: false
         default: '0.90'
       workers:
-        description: 'Số luồng crawler chạy song song cùng lúc an toàn hạ tầng (mặc định: 3)'
+        description: 'Số luồng crawler chạy song song (mặc định: 2)'
         required: false
-        default: '3'
+        default: '2'
 
 concurrency:
-  group: job-crawler-pipeline
+  group: local-topcv-jobsgo-crawler
   cancel-in-progress: false
 
 jobs:
-  crawl_and_sync:
-    name: Crawl Sites & Sync to Supabase
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
+  crawl_local:
+    name: Crawl TopCV & JobsGO on Local Machine (Vietnam IP)
+    runs-on: self-hosted
+    timeout-minutes: 120
 
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python 3.11
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -59,115 +50,93 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r crawler/requirements.txt
 
-      - name: 🌐 Install Playwright Chromium (For Cloudflare Turnstile Bypass)
+      - name: 🌐 Install Playwright Chromium (if needed)
         run: |
-          playwright install chromium --with-deps
+          playwright install chromium
 
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
         run: |
-          python -c "
-          from crawler.db import ensure_table_exists
-          ensure_table_exists('all_jobs_unified')
-          print('✅ Kết nối Supabase PostgreSQL thành công!')
-          "
+          python -c "from crawler.db import ensure_table_exists; ensure_table_exists('all_jobs_unified'); print('✅ Kết nối Supabase PostgreSQL thành công!')"
 
-      - name: 🚀 Run Pipeline (Crawl -> Per-source Tables -> Deduplicate & Sync)
+      - name: 🚀 Run TopCV & JobsGO Crawlers (Local Vietnam IP)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
-          HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
           PYTHONUNBUFFERED: "1"
+        shell: bash
         run: |
-          # Xây dựng câu lệnh chạy linh hoạt theo tham số kích hoạt
-          SELECTED_SITES="${{ inputs.sites }}"
-          if [ -z "$SELECTED_SITES" ]; then
-            SELECTED_SITES="vietnamworks,vieclam24h,careerlink,careerviet,joboko"
+          SITES="${{ inputs.sites }}"
+          if [ -z "$SITES" ]; then
+            SITES="topcv,jobsgo"
           fi
-          
-          CMD="python crawler/main.py --site $SELECTED_SITES"
-          
+          CMD="python crawler/main.py --site $SITES"
           if [ -n "${{ inputs.pages }}" ]; then
             CMD="$CMD --pages ${{ inputs.pages }}"
           else
             CMD="$CMD --pages 10"
           fi
-          
           if [ -n "${{ inputs.jobs_per_page }}" ]; then
             CMD="$CMD --jobs-per-page ${{ inputs.jobs_per_page }}"
           fi
-          
           if [ -n "${{ inputs.dedup_threshold }}" ]; then
             CMD="$CMD --dedup-threshold ${{ inputs.dedup_threshold }}"
           fi
-
           if [ -n "${{ inputs.workers }}" ]; then
             CMD="$CMD --workers ${{ inputs.workers }}"
           fi
-          
-          echo "Executing command: xvfb-run -a $CMD"
-          xvfb-run -a $CMD
+          echo "Executing on Local Self-Hosted Runner: $CMD"
+          eval $CMD
 
-      - name: "📊 Generate GitHub Step Summary"
+      - name: 📊 Render GitHub Step Summary
         if: always()
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
+        shell: bash
         run: |
           python -c "
           import os
-          from crawler.db import get_db_connection, sanitize_table_name
+          from crawler.db import get_db_connection
 
           summary_file = os.getenv('GITHUB_STEP_SUMMARY')
           if not summary_file:
               exit(0)
 
-          sources = ['careerlink', 'careerviet', 'topcv', 'vieclam24h', 'vietnamworks', 'jobsgo', 'joboko']
-          
           with open(summary_file, 'a', encoding='utf-8') as f:
-              f.write('## 📊 Báo Cáo Kết Quả Pipeline Crawl & Sync Supabase\n\n')
+              f.write('## 📊 Báo Cáo Kết Quả TopCV & JobsGO (Chạy trên Local Runner)\n\n')
               f.write('| Tên Bảng (Source / Unified) | Số Lượng Bản Ghi |\n')
               f.write('| :--- | :--- |\n')
-              
               try:
                   with get_db_connection() as conn:
                       with conn.cursor() as cur:
-                          # Thống kê từng bảng con
-                          for s in sources:
-                              tbl = f'jobs_{s}'
+                          for s in ['topcv', 'jobsgo']:
                               try:
-                                  cur.execute(f'SELECT COUNT(*) FROM {tbl};')
+                                  cur.execute(f'SELECT COUNT(*) FROM jobs_{s};')
                                   cnt = cur.fetchone()[0]
                                   f.write(f'| `jobs_{s}` | **{cnt}** |\n')
                               except Exception:
                                   f.write(f'| `jobs_{s}` | *Chưa tạo* |\n')
-                          
-                          # Thống kê bảng tổng
                           cur.execute('SELECT COUNT(*) FROM all_jobs_unified;')
-                          total_unified = cur.fetchone()[0]
-                          f.write(f'| **🌟 `all_jobs_unified` (Bảng Tổng)** | **{total_unified}** |\n')
+                          f.write(f'| **🌟 `all_jobs_unified` (Bảng Tổng)** | **{cur.fetchone()[0]}** |\n')
               except Exception as e:
-                  f.write(f'\n> ⚠️ Không thể truy vấn thống kê: {e}\n')
+                  f.write(f'\n> ⚠️ Lỗi truy vấn: {e}\n')
           "
 
-      - name: "📱 Optional: Notify Telegram on Finish"
+      - name: 📱 Optional: Notify Telegram on Finish
         if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           JOB_STATUS: ${{ job.status }}
+        shell: bash
         run: |
           if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
-            MSG="🤖 *[Job Hunter Pipeline]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            MSG="🤖 *[Job Hunter Local Pipeline - TopCV & JobsGO]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
               -d "chat_id=${TELEGRAM_CHAT_ID}" \
               -d "text=${MSG}" \

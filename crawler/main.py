@@ -102,6 +102,7 @@ def run_pipeline(
         "careerviet": ("crawler.crawl.careerviet", "crawl"),
         "topcv": ("crawler.crawl.topcv", "crawl"),
         "vieclam24h": ("crawler.crawl.vieclam24h", "crawl"),
+        "jobsgo": ("crawler.crawl.jobsgo", "crawl"),
         "joboko": ("crawler.crawl.joboko", "crawl"),
         "vietnamworks": ("crawler.crawl.vietnamworks", "crawl"),
     }
