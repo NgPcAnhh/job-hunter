@@ -63,8 +63,9 @@ logger = logging.getLogger(__name__)
 
 SOURCE_NAME = "vieclam24h"
 BASE_DOMAIN = "https://vieclam24h.vn"
-# Mặc định lọc ngành CNTT & Phần mềm (occupations[]=10) hoặc tìm kiếm chung
-BASE_PAGINATION_URL = "https://vieclam24h.vn/tim-kiem-viec-lam-nhanh?page={page}&occupations[]=10"
+# Ưu tiên SEO Category URL (được Cloudflare Edge CDN cache, không bị WAF chặn trên Datacenter IP)
+BASE_PAGINATION_URL = "https://vieclam24h.vn/viec-lam-it-phan-mem-o10.html?page={page}"
+ALT_PAGINATION_URL = "https://vieclam24h.vn/tim-kiem-viec-lam-nhanh?page={page}&occupations[]=10"
 
 # Thư mục lưu trữ Bronze
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "model" / "bronze"
@@ -114,10 +115,15 @@ def check_is_captcha_or_challenge(response: Any) -> bool:
     if not response or not hasattr(response, "text"):
         return False
 
-    if response.status_code in [403, 429]:
+    if getattr(response, "status_code", 200) in [403, 429]:
         return True
 
-    text_sample = response.text.lower()[:3000]
+    text_sample = (response.text or "").lower()[:3000]
+    if "403 forbidden" in text_sample or "access denied" in text_sample:
+        return True
+    if len((response.text or "").strip()) < 500 and ("forbidden" in text_sample or "blocked" in text_sample):
+        return True
+
     indicators = [
         "g-recaptcha",
         "recaptcha/api",
@@ -175,7 +181,12 @@ def safe_request(
                 try:
                     from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
                     b_res = fetch_with_stealth_browser(url)
-                    if b_res and b_res.status_code == 200 and not check_is_captcha_or_challenge(b_res):
+                    if (
+                        b_res
+                        and b_res.status_code == 200
+                        and not check_is_captcha_or_challenge(b_res)
+                        and len((b_res.text or "").strip()) > 1000
+                    ):
                         logger.info(f"🎉 [Stealth Browser] Vượt qua Bot Challenge của Vieclam24h thành công!")
                         if session:
                             sync_cookies_to_session(session, b_res.cookies)

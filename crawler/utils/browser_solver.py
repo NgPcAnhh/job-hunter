@@ -42,10 +42,14 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
     # Trên Linux nếu có DISPLAY (từ xvfb-run), chạy headless=False để tránh 100% cờ headless của Cloudflare
     use_headless = not (is_linux and has_display)
 
-    if is_linux:
-        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    else:
-        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    try:
+        from playwright_stealth import stealth_sync
+        HAS_STEALTH = True
+    except ImportError:
+        HAS_STEALTH = False
+
+    # Luôn sử dụng User-Agent Windows chuẩn để tránh cờ hệ điều hành máy chủ Linux bị Cloudflare chặn
+    ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
     args = [
         "--disable-blink-features=AutomationControlled",
@@ -66,6 +70,11 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
                 timezone_id="Asia/Ho_Chi_Minh",
             )
             page = context.new_page()
+            if HAS_STEALTH:
+                try:
+                    stealth_sync(page)
+                except Exception:
+                    pass
 
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_sec * 1000)
             page.wait_for_timeout(2500)
@@ -111,7 +120,10 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
             browser.close()
 
             status = 200
-            if "just a moment..." in final_title.lower() and len(final_html) < 4000:
+            lower_title = final_title.lower()
+            if "just a moment..." in lower_title or "403" in lower_title or "forbidden" in lower_title or "access denied" in lower_title:
+                status = 403
+            elif len(final_html) < 2000:
                 status = 403
 
             data = {
