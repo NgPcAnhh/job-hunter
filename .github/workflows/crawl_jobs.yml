@@ -30,10 +30,6 @@ name: Scheduled Job Hunter Pipeline (Crawl & Sync to Supabase)
         description: 'Số luồng crawler chạy song song cùng lúc an toàn hạ tầng (mặc định: 3)'
         required: false
         default: '3'
-      vn_proxy:
-        description: 'Proxy Việt Nam cho TopCV & JobsGO (vd: http://user:pass@ip:port hoặc socks5://ip:port)'
-        required: false
-        default: ''
 
 concurrency:
   group: job-crawler-pipeline
@@ -61,6 +57,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r crawler/requirements.txt
 
+      - name: 🛡️ Setup Cloudflare WARP (Bypass Datacenter IP Restrictions)
+        uses: fscarmen/warp-on-actions@main
+        with:
+          stack: dual
+          mode: wireguard
+
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -82,9 +84,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
           HTTPS_PROXY: ${{ secrets.HTTPS_PROXY }}
-          VN_PROXY: ${{ secrets.VN_PROXY }}
-          TOPCV_PROXY: ${{ secrets.TOPCV_PROXY }}
-          JOBSGO_PROXY: ${{ secrets.JOBSGO_PROXY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           PYTHONUNBUFFERED: "1"
@@ -112,12 +111,6 @@ jobs:
 
           if [ -n "${{ inputs.workers }}" ]; then
             CMD="$CMD --workers ${{ inputs.workers }}"
-          fi
-
-          if [ -n "${{ inputs.vn_proxy }}" ]; then
-            CMD="$CMD --vn-proxy ${{ inputs.vn_proxy }}"
-          elif [ -n "${{ secrets.VN_PROXY }}" ]; then
-            CMD="$CMD --vn-proxy ${{ secrets.VN_PROXY }}"
           fi
           
           echo "Executing command: $CMD"

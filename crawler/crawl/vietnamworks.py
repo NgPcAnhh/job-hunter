@@ -246,11 +246,10 @@ def crawl(
         f"Delay = {min_delay}s - {max_delay}s"
     )
 
-    session_kwargs: Dict[str, Any] = {
-        "timeout": 30,
-    }
-    if proxy:
-        session_kwargs["proxies"] = {"http": proxy, "https": proxy}
+    resolved_proxy = proxy or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+    session_kwargs: Dict[str, Any] = {"timeout": 30}
+    if resolved_proxy:
+        session_kwargs["proxies"] = {"http": resolved_proxy, "https": resolved_proxy}
 
     if HAS_CURL_CFFI:
         session_kwargs["impersonate"] = "chrome120"

@@ -64,14 +64,6 @@ try:
 except ImportError:
     from db import upsert_jobs_to_source_table, upsert_jobs_to_supabase
 
-try:
-    from crawler.proxy_pool import resolve_vn_proxy
-except ImportError:
-    try:
-        from proxy_pool import resolve_vn_proxy
-    except ImportError:
-        resolve_vn_proxy = lambda site_name=None, explicit_proxy=None: explicit_proxy
-
 # Cấu hình logger
 logging.basicConfig(
     level=logging.INFO,
@@ -151,11 +143,8 @@ def create_session(proxy: Optional[str] = None) -> Any:
     """
     Tạo Client Session lưu trữ Cookies liên tục giữa các lượt request,
     kết hợp giả lập TLS Fingerprint của Chrome 120 thật để vượt qua WAF Cloudflare.
-    Tự động sử dụng Proxy Việt Nam (từ ENV VN_PROXY hoặc tự động dò tìm).
     """
-    resolved_proxy = resolve_vn_proxy("topcv", proxy)
-    if resolved_proxy:
-        logger.info(f"🌐 [TopCV] Định tuyến qua Proxy Việt Nam: {resolved_proxy}")
+    resolved_proxy = proxy or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
 
     if HAS_CURL_CFFI:
         session_kwargs: Dict[str, Any] = {

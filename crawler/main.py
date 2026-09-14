@@ -11,7 +11,6 @@ import time
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -41,14 +40,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def crawl_single_spider(
-    site_name: str,
-    mod_path: str,
-    func_name: str,
-    pages: int,
-    max_jobs_per_page: str,
-    vn_proxy: Optional[str] = None
-):
+def crawl_single_spider(site_name: str, mod_path: str, func_name: str, pages: int, max_jobs_per_page: str):
     """
     Worker thực thi cào dữ liệu cho một spider cụ thể trong một luồng độc lập.
     """
@@ -60,11 +52,7 @@ def crawl_single_spider(
         crawl_func = getattr(mod, func_name)
 
         # Thực hiện crawl và tự động lưu vào bảng riêng jobs_<source>
-        crawl_kwargs = {"page": pages, "max_jobs_per_page": max_jobs_per_page}
-        if site_name in ["topcv", "jobsgo"] and vn_proxy:
-            crawl_kwargs["proxy"] = vn_proxy
-
-        crawled = crawl_func(**crawl_kwargs)
+        crawled = crawl_func(page=pages, max_jobs_per_page=max_jobs_per_page)
         job_count = len(crawled) if crawled else 0
         duration = time.time() - site_start_time
         logger.info(f"✅ Hoàn tất crawl {site_name}: {job_count} jobs vào `jobs_{site_name}` ({duration:.1f}s).")
@@ -89,8 +77,7 @@ def run_pipeline(
     max_jobs_per_page="max",
     dedup_threshold=0.90,
     skip_sync=False,
-    max_workers=3,
-    vn_proxy=None,
+    max_workers=3
 ):
     """
     Chạy song song (mặc định 3 workers) các crawler lưu vào bảng riêng (`jobs_<source>`),
@@ -129,7 +116,7 @@ def run_pipeline(
 
     # 3. Giai đoạn 1: Chạy song song (Parallel execution với ThreadPoolExecutor)
     logger.info(f"⚡ Bắt đầu cào đồng thời {len(valid_spiders)} website với {max_workers} workers song song...")
-
+    
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_site = {
             executor.submit(
@@ -138,8 +125,7 @@ def run_pipeline(
                 mod_path,
                 func_name,
                 pages,
-                max_jobs_per_page,
-                vn_proxy
+                max_jobs_per_page
             ): site_name
             for site_name, (mod_path, func_name) in valid_spiders
         }
@@ -199,7 +185,6 @@ def main():
     parser.add_argument("--dedup-threshold", type=float, default=0.90, help="Ngưỡng so sánh tương đồng (mặc định: 0.90)")
     parser.add_argument("--workers", type=int, default=3, help="Số luồng chạy song song an toàn cho hạ tầng (mặc định: 3)")
     parser.add_argument("--skip-sync", action="store_true", help="Chỉ cào vào bảng riêng, không đồng bộ sang bảng tổng")
-    parser.add_argument("--vn-proxy", "--proxy", type=str, default=None, help="Proxy Việt Nam dành riêng cho TopCV và JobsGO")
 
     args = parser.parse_args()
     selected_sites = [s.strip() for s in args.site.split(",")] if args.site else None
@@ -210,8 +195,7 @@ def main():
         max_jobs_per_page=args.jobs_per_page,
         dedup_threshold=args.dedup_threshold,
         skip_sync=args.skip_sync,
-        max_workers=args.workers,
-        vn_proxy=args.vn_proxy,
+        max_workers=args.workers
     )
 
 
