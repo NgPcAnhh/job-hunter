@@ -129,10 +129,15 @@ def check_is_captcha_or_challenge(response: Any) -> bool:
     if not response or not hasattr(response, "text"):
         return False
 
-    if response.status_code in [403, 429]:
+    if getattr(response, "status_code", 200) in [403, 429]:
         return True
 
-    text_sample = response.text.lower()[:3000]
+    text_sample = (response.text or "").lower()[:3000]
+    if "403 forbidden" in text_sample or "access denied" in text_sample:
+        return True
+    if len((response.text or "").strip()) < 500 and ("forbidden" in text_sample or "blocked" in text_sample):
+        return True
+
     indicators = [
         "cf-turnstile",
         "cf-challenge",
@@ -142,6 +147,8 @@ def check_is_captcha_or_challenge(response: Any) -> bool:
         "access denied",
         "blocked",
         "just a moment...",
+        "attention required! | cloudflare",
+        "<title>bot verification</title>",
     ]
     return any(ind in text_sample for ind in indicators)
 
@@ -201,8 +208,34 @@ def safe_request(
             # Kiểm tra Bot Challenge / Captcha
             if check_is_captcha_or_challenge(response):
                 logger.warning(
-                    f"⚠️  [Anti-Ban] Phát hiện Bot Challenge/Captcha tại lần thử #{attempt}/{max_retries}. "
-                    f"Tự động tạm dừng {backoff:.1f}s để giải phóng cờ IP..."
+                    f"⚠️  [Anti-Ban] Phát hiện Bot Challenge/Captcha tại {url} (Lần #{attempt}/{max_retries}). "
+                    f"Đang kích hoạt Stealth Headless Browser giải mã Cloudflare..."
+                )
+                try:
+                    from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+                    b_res = fetch_with_stealth_browser(url)
+                    if (
+                        b_res
+                        and b_res.status_code == 200
+                        and not check_is_captcha_or_challenge(b_res)
+                        and len((b_res.text or "").strip()) > 1000
+                    ):
+                        logger.info(f"🎉 [Stealth Browser] Vượt qua Bot Challenge của Timviec365 thành công!")
+                        if session:
+                            sync_cookies_to_session(session, b_res.cookies)
+                        return b_res
+                except Exception as b_err:
+                    logger.debug(f"Lỗi khi kích hoạt stealth browser: {b_err}")
+
+                if attempt >= 2:
+                    logger.warning(
+                        f"🛡️  [Anti-Ban / Captcha Blocked] Máy chủ Timviec365 kích hoạt Bot Challenge trên IP Datacenter. "
+                        f"Tạm dừng cào Timviec365 để pipeline tiếp tục với các spider khác."
+                    )
+                    return None
+
+                logger.warning(
+                    f"⚠️  [Anti-Ban] Tạm dừng {backoff:.1f}s trước khi thử lại..."
                 )
                 time.sleep(backoff)
                 backoff *= 2
