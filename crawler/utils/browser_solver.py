@@ -60,9 +60,14 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
         "--window-size=1920,1080",
     ]
 
+    proxy_url = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+    launch_kwargs: Dict[str, Any] = {"headless": use_headless, "args": args}
+    if proxy_url:
+        launch_kwargs["proxy"] = {"server": proxy_url}
+
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=use_headless, args=args)
+            browser = p.chromium.launch(**launch_kwargs)
             context = browser.new_context(
                 user_agent=ua,
                 viewport={"width": 1920, "height": 1080},
@@ -121,7 +126,14 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
 
             status = 200
             lower_title = final_title.lower()
-            if "just a moment..." in lower_title or "403" in lower_title or "forbidden" in lower_title or "access denied" in lower_title:
+            if (
+                "just a moment..." in lower_title
+                or "403" in lower_title
+                or "forbidden" in lower_title
+                or "access denied" in lower_title
+                or "attention required!" in lower_title
+                or "cloudflare" in lower_title
+            ):
                 status = 403
             elif len(final_html) < 2000:
                 status = 403
