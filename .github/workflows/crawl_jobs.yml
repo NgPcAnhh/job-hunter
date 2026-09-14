@@ -38,7 +38,7 @@ concurrency:
 jobs:
   crawl_and_sync:
     name: Crawl Sites & Sync to Supabase
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 90
 
     steps:
@@ -58,7 +58,7 @@ jobs:
           pip install -r crawler/requirements.txt
 
       - name: 🛡️ Setup Cloudflare WARP (Bypass Datacenter IP Restrictions)
-        uses: fscarmen/warp-on-actions@v1.3
+        uses: fscarmen/warp-on-actions@main
         with:
           stack: dual
           mode: wireguard
