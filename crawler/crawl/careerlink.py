@@ -141,9 +141,10 @@ def check_is_captcha_or_challenge(response) -> bool:
 def safe_request(
     session: Any,
     url: str,
-    max_retries: int = 4,
-    initial_backoff: float = 4.0,
-    referer: Optional[str] = None
+    max_retries: int = 3,
+    initial_backoff: float = 3.0,
+    referer: Optional[str] = None,
+    timeout: int = 25
 ) -> Optional[Any]:
     """
     Hàm gửi request an toàn bảo vệ chống chặn IP (Anti-Ban / Anti-Tarpit):
@@ -159,9 +160,9 @@ def safe_request(
 
         try:
             if HAS_CURL_CFFI:
-                response = session.get(url, headers=headers, timeout=30, impersonate="chrome120")
+                response = session.get(url, headers=headers, timeout=timeout, impersonate="chrome120")
             else:
-                response = session.get(url, headers=headers, timeout=30)
+                response = session.get(url, headers=headers, timeout=timeout)
 
             # Kiểm tra xem website có trả về trang kiểm tra Bot / Captcha không
             if check_is_captcha_or_challenge(response):
@@ -369,6 +370,98 @@ def parse_job_detail(soup: BeautifulSoup, job_url: str = "") -> Dict[str, Any]:
     }
 
 
+def extract_jobs_from_list_page(soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    """
+    Trích xuất toàn bộ dữ liệu việc làm cơ bản trực tiếp từ thẻ .job-item trên trang danh sách.
+    Bao gồm đầy đủ: job_title, job_url, company_name, company_url, company_logo,
+    salary, level, location_short, posted_date, v.v.
+    Đảm bảo 100% không bị mất bài đăng ngay cả khi trang chi tiết bị WAF rate-limit/tarpit.
+    """
+    jobs: List[Dict[str, Any]] = []
+    list_container = soup.select_one("div.list-group.mt-4, .list-group") or soup
+    job_elements = list_container.select(".job-item")
+
+    for job_elem in job_elements:
+        link_elem = job_elem.select_one("a.job-link") or job_elem.find("a", href=lambda h: h and "/tim-viec-lam/" in h)
+        if not link_elem or not link_elem.get("href"):
+            continue
+        raw_href = link_elem.get("href").strip()
+        job_url = urljoin("https://www.careerlink.vn", raw_href)
+
+        # Tiêu đề việc làm
+        title_elem = job_elem.select_one("a.job-link h5.job-name, a.job-link")
+        job_title = title_elem.get_text(strip=True) if title_elem else (link_elem.get("title") or "").strip()
+        if not job_title:
+            continue
+
+        # Thông tin công ty
+        comp_elem = job_elem.select_one("a.job-company, p.org-name a")
+        company_name = comp_elem.get_text(strip=True) if comp_elem else None
+        comp_href = comp_elem.get("href") if comp_elem else ""
+        company_url = urljoin("https://www.careerlink.vn", comp_href) if comp_href else None
+
+        # Logo công ty
+        logo_elem = job_elem.select_one(".job-logo img, img.company-logo, img")
+        company_logo = None
+        if logo_elem:
+            raw_src = logo_elem.get("src") or logo_elem.get("data-src") or ""
+            if raw_src:
+                company_logo = raw_src.strip()
+
+        # Địa điểm
+        loc_elem = job_elem.select_one(".job-location")
+        location_short = " ".join(loc_elem.stripped_strings) if loc_elem else None
+
+        # Lương & Cấp bậc
+        sal_elem = job_elem.select_one(".job-salary")
+        salary = sal_elem.get_text(strip=True) if sal_elem else "Thương lượng"
+
+        pos_elem = job_elem.select_one(".job-position")
+        level = pos_elem.get_text(strip=True) if pos_elem else None
+
+        # Ngày đăng tuyển (từ unix timestamp của cl-datetime)
+        dt_elem = job_elem.select_one(".cl-datetime[data-datetime]")
+        posted_date = None
+        if dt_elem and dt_elem.get("data-datetime"):
+            try:
+                import datetime
+                ts = int(dt_elem.get("data-datetime"))
+                posted_date = datetime.datetime.fromtimestamp(ts).strftime("%d/%m/%Y")
+            except Exception:
+                pass
+
+        # Job ID
+        save_btn = job_elem.select_one("button[data-job-id]")
+        job_id = save_btn.get("data-job-id") if save_btn else ""
+
+        jobs.append({
+            "job_url": job_url,
+            "source": SOURCE_NAME,
+            "job_title": job_title,
+            "company_name": company_name,
+            "company_url": company_url,
+            "company_logo": company_logo,
+            "salary": salary,
+            "experience": None,
+            "level": level,
+            "work_type": None,
+            "education": None,
+            "industry": "Công nghệ thông tin",
+            "location_short": location_short,
+            "workplace_detail": None,
+            "working_time": None,
+            "posted_date": posted_date,
+            "deadline": None,
+            "keyword": "",
+            "job_description": job_title,
+            "job_requirements": "",
+            "benefits": "",
+            "extra_info": {"job_id": job_id} if job_id else {},
+        })
+
+    return jobs
+
+
 def extract_job_urls_from_page(soup: BeautifulSoup) -> List[str]:
     """Trích xuất toàn bộ URL chi tiết bài đăng từ trang danh sách."""
     job_urls: List[str] = []
@@ -509,11 +602,12 @@ def crawl(
                 break
 
             soup = BeautifulSoup(res.text, "html.parser")
-            job_urls = extract_job_urls_from_page(soup)
+            list_jobs = extract_jobs_from_list_page(soup)
+            job_urls = [j["job_url"] for j in list_jobs] if list_jobs else extract_job_urls_from_page(soup)
             page_title = soup.title.get_text(strip=True) if soup.title else "N/A"
             logger.info(
                 f"📄 Phản hồi #{current_page}: HTTP {res.status_code} | URL: {res.url} | "
-                f"{len(res.text)} bytes | Title: {page_title} | URLs tìm thấy: {len(job_urls)}"
+                f"{len(res.text)} bytes | Title: {page_title} | Jobs tìm thấy: {len(job_urls)}"
             )
 
             # Nếu HTTP trả về 0 URLs tại trang 1: Thử link search thay thế hoặc Playwright Fallback
@@ -523,38 +617,46 @@ def crawl(
                 alt_res = safe_request(session, alt_url, max_retries=2, initial_backoff=3.0)
                 if alt_res and alt_res.status_code == 200:
                     alt_soup = BeautifulSoup(alt_res.text, "html.parser")
-                    alt_urls = extract_job_urls_from_page(alt_soup)
+                    alt_jobs = extract_jobs_from_list_page(alt_soup)
+                    alt_urls = [j["job_url"] for j in alt_jobs] if alt_jobs else extract_job_urls_from_page(alt_soup)
                     if alt_urls:
                         logger.info(f"✅ Thành công với endpoint search: tìm thấy {len(alt_urls)} jobs!")
+                        list_jobs = alt_jobs
                         job_urls = alt_urls
                         base_url_with_filter = "https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19"
 
-            # Nếu vẫn không có URLs (do WAF/Cloud Challenge hoặc client-side render): Kích hoạt Playwright Fallback
+            # Nếu vẫn không có URLs (do WAF/Cloud Challenge hoặc client-side render): Kích hoạt Playwright Fallback CHO TRANG DANH SÁCH
             if not job_urls:
                 logger.info(f"⚡ Thử fallback sang Playwright Headless Browser cho trang #{current_page}...")
                 pw_html = fetch_list_page_with_playwright(page_url, session=session)
                 if pw_html:
                     pw_soup = BeautifulSoup(pw_html, "html.parser")
-                    pw_urls = extract_job_urls_from_page(pw_soup)
+                    pw_jobs = extract_jobs_from_list_page(pw_soup)
+                    pw_urls = [j["job_url"] for j in pw_jobs] if pw_jobs else extract_job_urls_from_page(pw_soup)
                     if pw_urls:
                         logger.info(f"✅ Playwright Fallback thành công: tìm thấy {len(pw_urls)} jobs!")
+                        list_jobs = pw_jobs
                         job_urls = pw_urls
 
-                # Nếu URL danh mục không ra trên Playwright, thử URL search tổng
                 if not job_urls:
                     alt_pw_url = f"https://www.careerlink.vn/vieclam/tim-kiem-viec-lam?categories=19&page={current_page}"
                     logger.info(f"⚡ Thử fallback Playwright với search URL: {alt_pw_url}...")
                     alt_pw_html = fetch_list_page_with_playwright(alt_pw_url, session=session)
                     if alt_pw_html:
                         alt_pw_soup = BeautifulSoup(alt_pw_html, "html.parser")
-                        alt_pw_urls = extract_job_urls_from_page(alt_pw_soup)
+                        alt_pw_jobs = extract_jobs_from_list_page(alt_pw_soup)
+                        alt_pw_urls = [j["job_url"] for j in alt_pw_jobs] if alt_pw_jobs else extract_job_urls_from_page(alt_pw_soup)
                         if alt_pw_urls:
                             logger.info(f"✅ Playwright Search Fallback thành công: tìm thấy {len(alt_pw_urls)} jobs!")
+                            list_jobs = alt_pw_jobs
                             job_urls = alt_pw_urls
 
             if not job_urls:
                 logger.info(f"Không tìm thấy việc làm nào ở trang #{current_page}. Đã cào hết toàn bộ trang!")
                 break
+
+            # Tạo map theo url để lấy baseline job
+            jobs_by_url = {j["job_url"]: j for j in list_jobs} if list_jobs else {}
 
             # Lọc trùng lặp
             new_job_urls = [u for u in job_urls if u not in visited_job_urls]
@@ -571,44 +673,89 @@ def crawl(
             if limit_jobs_per_page is not None and limit_jobs_per_page > 0:
                 new_job_urls = new_job_urls[:limit_jobs_per_page]
 
+            consecutive_detail_fails = 0
+            skip_detail_requests = False
+
             for idx, j_url in enumerate(new_job_urls, 1):
                 job_counter += 1
 
-                # Nghỉ xả hơi theo batch (Batch Cooldown)
-                if job_counter > 1 and (job_counter % batch_cooldown_every == 0):
-                    cooldown_jitter = batch_cooldown_seconds + random.uniform(1.0, 2.5)
-                    logger.info(f"☕ [Batch Cooldown] Đã cào {job_counter} jobs. Tạm dừng {cooldown_jitter:.1f}s...")
-                    time.sleep(cooldown_jitter)
-                else:
-                    sleep_time = random.uniform(min_delay, max_delay)
-                    time.sleep(sleep_time)
+                # Lấy dữ liệu cơ bản đã trích xuất từ trang danh sách
+                job_data = jobs_by_url.get(j_url) or {
+                    "job_url": j_url,
+                    "source": SOURCE_NAME,
+                    "job_title": "",
+                    "company_name": "",
+                    "company_url": None,
+                    "company_logo": "",
+                    "salary": "Thương lượng",
+                    "experience": None,
+                    "level": None,
+                    "work_type": None,
+                    "education": None,
+                    "industry": "Công nghệ thông tin",
+                    "location_short": None,
+                    "workplace_detail": None,
+                    "working_time": None,
+                    "posted_date": None,
+                    "deadline": None,
+                    "keyword": "",
+                    "job_description": "",
+                    "job_requirements": "",
+                    "benefits": "",
+                    "extra_info": {},
+                }
 
-                detail_res = safe_request(session, j_url, max_retries=3, initial_backoff=6.0, referer=page_url)
-                
-                # Kiểm tra nếu bị redirect về trang chủ (do thiếu hoặc hết hạn session cookie)
-                is_redirected_to_home = False
-                if detail_res and str(detail_res.url).rstrip("/") in ["https://www.careerlink.vn", "https://careerlink.vn"]:
-                    is_redirected_to_home = True
+                # Nếu chưa bị rate-limit tarpit: gửi request chi tiết với timeout ngắn (10s)
+                if not skip_detail_requests:
+                    # Nghỉ xả hơi theo batch (Batch Cooldown)
+                    if job_counter > 1 and (job_counter % batch_cooldown_every == 0):
+                        cooldown_jitter = batch_cooldown_seconds + random.uniform(1.0, 2.5)
+                        logger.info(f"☕ [Batch Cooldown] Đã cào {job_counter} jobs. Tạm dừng {cooldown_jitter:.1f}s...")
+                        time.sleep(cooldown_jitter)
+                    else:
+                        sleep_time = random.uniform(min_delay, max_delay)
+                        time.sleep(sleep_time)
 
-                detail_soup = BeautifulSoup(detail_res.text, "html.parser") if (detail_res and not is_redirected_to_home) else None
-                job_data = parse_job_detail(detail_soup, job_url=j_url) if detail_soup else {}
+                    detail_res = safe_request(session, j_url, max_retries=2, initial_backoff=2.0, referer=page_url, timeout=10)
 
-                # Nếu không bóc tách được job_title (hoặc bị redirect về trang chủ): Dùng Playwright tải chi tiết và đồng bộ lại cookie
+                    is_valid_detail = (
+                        detail_res is not None
+                        and detail_res.status_code == 200
+                        and str(detail_res.url).rstrip("/") not in ["https://www.careerlink.vn", "https://careerlink.vn"]
+                        and len(detail_res.text or "") > 1000
+                    )
+
+                    if is_valid_detail:
+                        consecutive_detail_fails = 0
+                        detail_soup = BeautifulSoup(detail_res.text, "html.parser")
+                        parsed_detail = parse_job_detail(detail_soup, job_url=j_url)
+                        # Cập nhật bổ sung các trường chi tiết
+                        for field in ["job_title", "company_name", "company_url", "company_logo", "salary",
+                                      "experience", "keyword", "deadline", "job_description", "job_requirements", "benefits"]:
+                            val = parsed_detail.get(field)
+                            if val:
+                                job_data[field] = val
+                    else:
+                        consecutive_detail_fails += 1
+                        logger.info(f"  [#{idx}] Chi tiết {j_url} không phản hồi ({consecutive_detail_fails}/2). Giữ thông tin từ trang danh sách.")
+                        # Circuit breaker: Nếu 2 bài liên tiếp bị timeout/chặn kết nối -> Bật chế độ nạp nhanh không retry để tránh treo pipeline
+                        if consecutive_detail_fails >= 2:
+                            logger.warning(
+                                "⚠️ [Rate-Limit Tarpit] CareerLink giới hạn lượt truy cập trang chi tiết. "
+                                "Tự động kích hoạt cơ chế Nạp Nhanh Trực Tiếp từ trang danh sách cho toàn bộ bài còn lại "
+                                "để pipeline hoàn tất siêu tốc mà không bị treo!"
+                            )
+                            skip_detail_requests = True
+
+                # Nếu tiêu đề vẫn trống (trường hợp hiếm), bỏ qua
                 if not job_data.get("job_title"):
-                    logger.info(f"  [#{idx}] Đang tải lại chi tiết bằng Playwright: {j_url}")
-                    pw_detail_html = fetch_list_page_with_playwright(j_url, session=session)
-                    if pw_detail_html:
-                        detail_soup = BeautifulSoup(pw_detail_html, "html.parser")
-                        job_data = parse_job_detail(detail_soup, job_url=j_url)
-
-                if not job_data.get("job_title"):
-                    logger.warning(f"  [#{idx}] Không bóc tách được job_title tại {j_url}. Bỏ qua.")
                     continue
 
                 crawled_jobs.append(job_data)
                 title_disp = (job_data.get("job_title") or "")[:40]
                 kw_disp = job_data.get("keyword") or "N/A"
-                logger.info(f"  ✅ [#{len(crawled_jobs)}] {title_disp} | Keyword: {kw_disp}")
+                comp_disp = (job_data.get("company_name") or "N/A")[:25]
+                logger.info(f"  ✅ [#{len(crawled_jobs)}] {title_disp} | {comp_disp} | Keyword: {kw_disp}")
 
                 # Ghi dữ liệu liên tục vào CSV & JSON sau mỗi 5 job
                 if len(crawled_jobs) % 5 == 0:
