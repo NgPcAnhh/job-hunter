@@ -649,12 +649,36 @@ def save_data(jobs: List[Dict[str, Any]], csv_path: Path = OUTPUT_CSV, json_path
         logger.debug(f"Không thể ghi file backup: {err}")
 
 
+def detect_warp_proxy() -> Optional[str]:
+    """Tự động phát hiện nếu có Cloudflare WARP SOCKS5 proxy đang chạy trên localhost:40000."""
+    import socket
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.3)
+        res = sock.connect_ex(("127.0.0.1", 40000))
+        sock.close()
+        if res == 0:
+            return "socks5://127.0.0.1:40000"
+    except Exception:
+        pass
+    return None
+
+
 def create_session(proxy: Optional[str] = None) -> Any:
     """
     Tạo Client Session lưu trữ Cookies liên tục giữa các lượt request,
     kết hợp giả lập TLS Fingerprint của Chrome thật để tránh bị hệ thống anti-bot phát hiện.
     """
-    resolved_proxy = proxy or os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+    resolved_proxy = (
+        proxy
+        or os.getenv("VIECLAM24H_PROXY")
+        or os.getenv("HTTPS_PROXY")
+        or os.getenv("HTTP_PROXY")
+        or detect_warp_proxy()
+    )
+
+    if resolved_proxy:
+        logger.info(f"🌐 [Proxy Kích Hoạt] Sử dụng Proxy cho Vieclam24h: {resolved_proxy}")
 
     if HAS_CURL_CFFI:
         session_kwargs: Dict[str, Any] = {

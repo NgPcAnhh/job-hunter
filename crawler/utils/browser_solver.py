@@ -61,6 +61,17 @@ def _worker_fetch(url: str, output_path: str, timeout_sec: int = 40):
     ]
 
     proxy_url = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+    if not proxy_url:
+        import socket
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.3)
+            if sock.connect_ex(("127.0.0.1", 40000)) == 0:
+                proxy_url = "socks5://127.0.0.1:40000"
+            sock.close()
+        except Exception:
+            pass
+
     launch_kwargs: Dict[str, Any] = {"headless": use_headless, "args": args}
     if proxy_url:
         launch_kwargs["proxy"] = {"server": proxy_url}
