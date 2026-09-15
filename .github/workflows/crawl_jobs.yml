@@ -161,18 +161,3 @@ jobs:
               except Exception as e:
                   f.write(f'\n> ⚠️ Không thể truy vấn thống kê: {e}\n')
           EOF
-
-      - name: "📱 Optional: Notify Telegram on Finish"
-        if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
-            MSG="🤖 *[Job Hunter Pipeline]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              -d "chat_id=${TELEGRAM_CHAT_ID}" \
-              -d "text=${MSG}" \
-              -d "parse_mode=Markdown" > /dev/null || true
-          fi

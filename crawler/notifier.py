@@ -64,38 +64,18 @@ def get_run_link_html() -> str:
     run_id = os.getenv("GITHUB_RUN_ID", "").strip()
     if repo and run_id:
         run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
-        return f'\n🔗 <a href="{run_url}">Xem chi tiết GitHub Actions Run</a>'
+        return f'\n🔗 <a href="{run_url}"><b>Xem chi tiết GitHub Actions Run #{run_id}</b></a>'
     return ""
 
 
 def notify_pipeline_start(sites: List[str], pages: int) -> bool:
-    """Sends a notification when the crawler pipeline begins execution."""
-    if not is_telegram_configured():
-        return False
-
-    sites_str = ", ".join(sites)
-    start_time = time.strftime("%Y-%m-%d %H:%M:%S")
-    msg = (
-        f"🚀 <b>[JOB HUNTER PIPELINE - BẮT ĐẦU]</b>\n"
-        f"⏰ <b>Thời gian:</b> <code>{start_time}</code>\n"
-        f"🌐 <b>Các trang mục tiêu ({len(sites)}):</b> <code>{sites_str}</code>\n"
-        f"📄 <b>Số trang cào mỗi site:</b> <code>{pages}</code>"
-        f"{get_run_link_html()}"
-    )
-    return send_telegram_message(msg)
+    """No-op: Chế độ thông báo duy nhất đã được kích hoạt, chỉ gửi 1 tin tổng kết cuối cùng."""
+    return True
 
 
 def notify_site_progress(site_name: str, job_count: int, status: str, duration_s: float) -> bool:
-    """Sends progress update after a single spider finishes."""
-    if not is_telegram_configured():
-        return False
-
-    icon = "✅" if status == "SUCCESS" else "❌"
-    msg = (
-        f"{icon} <b>Crawl xong:</b> <code>jobs_{site_name}</code>\n"
-        f"📦 <b>Số jobs:</b> <b>{job_count}</b> | ⏱️ <code>{duration_s:.1f}s</code>"
-    )
-    return send_telegram_message(msg)
+    """No-op: Chế độ thông báo duy nhất đã được kích hoạt, chỉ gửi 1 tin tổng kết cuối cùng."""
+    return True
 
 
 def notify_pipeline_summary(
@@ -105,42 +85,73 @@ def notify_pipeline_summary(
     error: Optional[str] = None
 ) -> bool:
     """
-    Sends a comprehensive summary of crawled sites and deduplication/sync metrics.
+    Gửi DUY NHẤT 1 bản báo cáo tổng kết hoàn chỉnh và giàu thông tin qua Telegram:
+    - Thời gian chạy job (Giờ Việt Nam UTC+7) & Tổng thời lượng
+    - Quá trình xử lý & Kết quả thu thập từng bảng nguồn
+    - Kết quả đồng bộ & Khử trùng lặp sang all_jobs_unified
+    - Phần chẩn đoán ngắn gọn cho các task về 0 jobs hoặc gặp lỗi
     """
+    import html as html_lib
+    import datetime
+
     if not is_telegram_configured():
         return False
 
-    finish_time = time.strftime("%Y-%m-%d %H:%M:%S")
-    status_header = "🎉 <b>[JOB HUNTER - HOÀN TẤT THÀNH CÔNG]</b>" if not error else "⚠️ <b>[JOB HUNTER - CÓ LỖI XẢY RA]</b>"
+    # 1. Tính thời gian hoàn tất theo giờ Việt Nam (UTC+7)
+    utc_now = datetime.datetime.utcnow()
+    vn_now = utc_now + datetime.timedelta(hours=7)
+    finish_time_str = vn_now.strftime("%d/%m/%Y %H:%M:%S")
+
+    wf_name = os.getenv("GITHUB_WORKFLOW") or ("Local Runner" if os.name == "nt" else "Job Hunter Pipeline")
+    status_header = "🎉 <b>[JOB HUNTER - HOÀN TẤT TỔNG KẾT]</b>" if not error else "⚠️ <b>[JOB HUNTER - BÁO CÁO CÓ LỖI]</b>"
 
     lines = [status_header]
-    lines.append(f"⏰ <b>Hoàn tất lúc:</b> <code>{finish_time}</code> (⏱️ {total_duration_s:.1f}s)\n")
+    lines.append(f"🏷️ <b>Workflow:</b> <code>{html_lib.escape(wf_name)}</code>")
+    lines.append(f"⏰ <b>Thời gian (VN):</b> <code>{finish_time_str}</code> (⏱️ <b>{total_duration_s:.1f}s</b>)\n")
 
-    # 1. Báo cáo Giai đoạn 1: Thu thập theo trang
-    lines.append("📊 <b>1. Dữ liệu thu thập theo từng bảng nguồn:</b>")
+    # 2. Báo cáo Giai đoạn 1: Quá trình & Kết quả Cào dữ liệu theo từng website
+    lines.append("📊 <b>1. Quá trình cào theo từng bảng nguồn:</b>")
     total_crawled = 0
+    zero_or_failed_jobs = []
+
     for site, info in results_summary.items():
         st = info.get("status", "UNKNOWN")
         cnt = info.get("jobs", 0)
+        dur = info.get("duration", 0.0)
+        err_msg = info.get("error") or info.get("message") or ""
         total_crawled += cnt
-        icon = "✅" if st == "SUCCESS" else "❌"
-        lines.append(f"  • {icon} <code>jobs_{site:<12}</code>: <b>{cnt}</b> jobs")
 
-    lines.append(f"  👉 <i>Tổng jobs vừa cào:</i> <b>{total_crawled}</b> jobs\n")
+        if cnt > 0:
+            icon = "✅"
+            lines.append(f"  • {icon} <code>jobs_{site:<12}</code>: <b>{cnt}</b> jobs (⏱️ <code>{dur:.1f}s</code>)")
+        else:
+            icon = "⚠️"
+            lines.append(f"  • {icon} <code>jobs_{site:<12}</code>: <b>0</b> jobs (⏱️ <code>{dur:.1f}s</code>)")
+            zero_or_failed_jobs.append((site, err_msg if err_msg else "Không bóc tách được tin mới / WAF hoặc trang trống"))
 
-    # 2. Báo cáo Giai đoạn 2: Khử trùng lặp & Đồng bộ
+    lines.append(f"  👉 <b>Tổng số jobs thu thập:</b> <b>{total_crawled}</b> jobs\n")
+
+    # 3. Báo cáo Giai đoạn 2: Khử trùng lặp & Đồng bộ vào all_jobs_unified
     if sync_result:
         new_cnt = sync_result.get("new_jobs_inserted", 0)
         dup_cnt = sync_result.get("duplicates_detected", 0)
         total_unified = sync_result.get("total_unified_jobs", 0)
 
         lines.append("🔄 <b>2. Kết quả Khử trùng lặp & Đồng bộ (≥90%):</b>")
-        lines.append(f"  • 🔍 <b>Job mới độc nhất:</b> <b>+{new_cnt}</b> jobs <i>(đã nạp vào kho)</i>")
-        lines.append(f"  • ♻️ <b>Job trùng lặp phát hiện:</b> <b>{dup_cnt}</b> jobs <i>(đã lọc bỏ)</i>")
-        lines.append(f"  • 🌟 <b>Tổng kho all_jobs_unified:</b> <b>{total_unified}</b> jobs\n")
+        lines.append(f"  • 🔍 <b>Job mới độc nhất:</b> <b>+{new_cnt}</b> jobs <i>(đã nạp vào kho tổng)</i>")
+        lines.append(f"  • ♻️ <b>Job trùng lặp lọc bỏ:</b> <b>{dup_cnt}</b> jobs")
+        lines.append(f"  • 🌟 <b>Tổng kho all_jobs_unified:</b> <b>{total_unified:,}</b> jobs\n")
+
+    # 4. Báo cáo Giai đoạn 3: Chi tiết ngắn gọn cho các task về 0 jobs hoặc gặp sự cố
+    if zero_or_failed_jobs:
+        lines.append("⚠️ <b>3. Chẩn đoán task thu thập 0 jobs / Cảnh báo:</b>")
+        for site, reason in zero_or_failed_jobs:
+            clean_reason = html_lib.escape(str(reason))[:120]
+            lines.append(f"  • <b>{site}:</b> <i>{clean_reason}</i>")
+        lines.append("")
 
     if error:
-        lines.append(f"⚠️ <b>Lỗi phát sinh:</b> <code>{error}</code>\n")
+        lines.append(f"❌ <b>Lỗi hệ thống:</b> <code>{html_lib.escape(str(error))}</code>\n")
 
     lines.append(get_run_link_html())
     full_msg = "\n".join(lines)

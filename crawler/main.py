@@ -55,16 +55,16 @@ def crawl_single_spider(site_name: str, mod_path: str, func_name: str, pages: in
         crawled = crawl_func(page=pages, max_jobs_per_page=max_jobs_per_page)
         job_count = len(crawled) if crawled else 0
         duration = time.time() - site_start_time
-        logger.info(f"✅ Hoàn tất crawl {site_name}: {job_count} jobs vào `jobs_{site_name}` ({duration:.1f}s).")
-        
-        # Gửi thông báo tiến trình hoàn tất từng trang qua Telegram
-        notify_site_progress(site_name, job_count, "SUCCESS", duration)
-        return site_name, {"status": "SUCCESS", "jobs": job_count, "duration": duration}
+        if job_count > 0:
+            logger.info(f"✅ Hoàn tất crawl {site_name}: {job_count} jobs vào `jobs_{site_name}` ({duration:.1f}s).")
+            return site_name, {"status": "SUCCESS", "jobs": job_count, "duration": duration, "message": "Thành công"}
+        else:
+            logger.warning(f"⚠️ Crawl {site_name}: 0 jobs ({duration:.1f}s).")
+            return site_name, {"status": "WARNING", "jobs": 0, "duration": duration, "message": "0 jobs (Trang trống hoặc WAF/Bot Challenge)"}
     except Exception as e:
         duration = time.time() - site_start_time
         logger.error(f"❌ Thất bại khi cào {site_name}: {e}")
-        notify_site_progress(site_name, 0, "FAILED", duration)
-        return site_name, {"status": "FAILED", "error": str(e), "jobs": 0, "duration": duration}
+        return site_name, {"status": "FAILED", "error": str(e), "jobs": 0, "duration": duration, "message": f"Lỗi: {e}"}
     finally:
         # Giải phóng bộ nhớ RAM triệt để sau khi mỗi spider hoàn thành (đặc biệt là Playwright/Chromium)
         import gc
@@ -128,9 +128,6 @@ def run_pipeline(
     targets = sites if sites else canonical_all_sites
     valid_spiders = [(s, registered_spiders[s]) for s in targets if s in registered_spiders]
     results_summary = {}
-
-    # Gửi thông báo bắt đầu qua Telegram
-    notify_pipeline_start(targets, pages)
 
     # 3. Giai đoạn 1: Chạy song song (Parallel execution với ThreadPoolExecutor)
     logger.info(f"⚡ Bắt đầu cào đồng thời {len(valid_spiders)} website với {max_workers} workers song song...")

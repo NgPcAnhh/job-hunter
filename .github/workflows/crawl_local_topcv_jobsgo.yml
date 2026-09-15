@@ -69,12 +69,16 @@ jobs:
         run: |
           python -c "from crawler.db import ensure_table_exists; ensure_table_exists('all_jobs_unified'); print('✅ Kết nối Supabase PostgreSQL thành công!')"
 
-      - name: 🚀 Run TopCV & JobsGO Crawlers (Local Vietnam IP)
+      - name: 🚀 Run Local Crawlers (Local Vietnam IP)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
           PYTHONUNBUFFERED: "1"
         shell: bash
         run: |
@@ -137,19 +141,3 @@ jobs:
               except Exception as e:
                   f.write(f'\n> ⚠️ Lỗi truy vấn: {e}\n')
           EOF
-
-      - name: "📱 Optional: Notify Telegram on Finish"
-        if: always()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          JOB_STATUS: ${{ job.status }}
-        shell: bash
-        run: |
-          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
-            MSG="🤖 *[Job Hunter Local Pipeline - TopCV, JobsGO, TimViec365, ViecLam24h]* Kết quả chạy: *$JOB_STATUS*%0A⏰ Thời gian: $(date '+%Y-%m-%d %H:%M:%S') UTC%0A🔗 Chi tiết: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              -d "chat_id=${TELEGRAM_CHAT_ID}" \
-              -d "text=${MSG}" \
-              -d "parse_mode=Markdown" > /dev/null || true
-          fi
