@@ -13,7 +13,7 @@ name: Cloud Jobs
     # Cho phép kích hoạt thủ công từ giao diện GitHub Actions với các tùy chọn linh hoạt
     inputs:
       sites:
-        description: 'Tên spider cần cào (để trống để mặc định cào 7 trang trên Cloud)'
+        description: 'Tên spider cần cào (để trống để mặc định cào 6 trang trên Cloud)'
         required: false
         default: ''
       pages:
@@ -93,7 +93,7 @@ jobs:
           if [ -n "$SELECTED_SITES" ]; then
             CMD="python crawler/main.py --site $SELECTED_SITES"
           else
-            CMD="python crawler/main.py --site vietnamworks,vieclam24h,careerlink,careerviet,joboko,job123,topdev"
+            CMD="python crawler/main.py --site vietnamworks,careerlink,careerviet,joboko,job123,topdev"
           fi
           
           if [ -n "${{ inputs.pages }}" ]; then
@@ -132,7 +132,7 @@ jobs:
               exit(0)
 
           sources = [
-              'vietnamworks', 'vieclam24h', 'careerlink', 'careerviet',
+              'vietnamworks', 'careerlink', 'careerviet',
               'joboko', 'job123', 'topdev'
           ]
           
