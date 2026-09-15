@@ -142,9 +142,10 @@ def safe_request(
     session: Any,
     url: str,
     max_retries: int = 3,
-    initial_backoff: float = 3.0,
+    initial_backoff: float = 2.0,
     referer: Optional[str] = None,
-    timeout: int = 25
+    timeout: int = 15,
+    enable_browser_fallback: bool = True
 ) -> Optional[Any]:
     """
     Hàm gửi request an toàn bảo vệ chống chặn IP (Anti-Ban / Anti-Tarpit):
@@ -152,6 +153,7 @@ def safe_request(
     - Nhất quán Client Hints / User-Agent.
     - Phát hiện Captcha/Challenge. Khi phát hiện, tự động 'ngủ hạ nhiệt' (Backoff) và thử lại.
     - Xử lý timeout/drop connection tự động bằng Exponential Backoff.
+    - Tự động kích hoạt Stealth Browser Fallback khi bị WAF / Cloudflare chặn hoặc timeout.
     """
     backoff = initial_backoff
 
@@ -167,7 +169,7 @@ def safe_request(
             # Kiểm tra xem website có trả về trang kiểm tra Bot / Captcha không
             if check_is_captcha_or_challenge(response):
                 logger.warning(
-                    f"⚠️  [Anti-Ban] Website yêu cầu xác thực Bot/Challenge tại lần thử #{attempt}/{max_retries}. "
+                    f"⚠️  [Anti-Ban] Careerlink yêu cầu xác thực Bot/Challenge tại lần thử #{attempt}/{max_retries}. "
                     f"Tự động tạm dừng {backoff:.1f}s để giải phóng cờ IP..."
                 )
                 time.sleep(backoff)
@@ -203,6 +205,19 @@ def safe_request(
             )
             time.sleep(backoff)
             backoff *= 2
+
+    # Fallback tự động sang Stealth Browser độc lập nếu HTTP request bị timeout / WAF chặn hoàn toàn
+    if enable_browser_fallback:
+        try:
+            from crawler.utils.browser_solver import fetch_with_stealth_browser, sync_cookies_to_session
+            logger.info(f"🌐 [Browser Fallback] Tự động chuyển sang Stealth Browser cho: {url}")
+            res = fetch_with_stealth_browser(url, timeout_sec=25)
+            if res and res.status_code == 200 and len(res.text) > 500:
+                if session is not None and getattr(res, "cookies", None):
+                    sync_cookies_to_session(session, res.cookies)
+                return res
+        except Exception as err:
+            logger.debug(f"Browser fallback không thành công: {err}")
 
     logger.error(f"❌ Không thể truy cập {url} sau {max_retries} lần thử.")
     return None
