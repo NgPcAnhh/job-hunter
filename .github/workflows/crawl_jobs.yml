@@ -63,12 +63,6 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      - name: 🛡️ Setup Cloudflare WARP Proxy (For Vieclam24h / Cloudflare Bypass)
-        uses: fscarmen/warp-on-actions@main
-        continue-on-error: true
-        with:
-          mode: proxy
-
       - name: 🔌 Verify Supabase Connection
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -99,7 +93,7 @@ jobs:
           if [ -n "$SELECTED_SITES" ]; then
             CMD="python crawler/main.py --site $SELECTED_SITES"
           else
-            CMD="python crawler/main.py --site vietnamworks,vieclam24h,careerlink,careerviet,joboko,job123,topdev"
+            CMD="python crawler/main.py --site vietnamworks,careerlink,careerviet,joboko,job123,topdev"
           fi
           
           if [ -n "${{ inputs.pages }}" ]; then
@@ -138,7 +132,7 @@ jobs:
               exit(0)
 
           sources = [
-              'vietnamworks', 'vieclam24h', 'careerlink', 'careerviet',
+              'vietnamworks', 'careerlink', 'careerviet',
               'joboko', 'job123', 'topdev'
           ]
           
