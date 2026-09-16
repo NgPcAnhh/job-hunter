@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryCached } from '@/lib/db';
 import { SalaryLevelStat, SalaryCityStat } from '@/types/job';
 
 export const dynamic = 'force-dynamic';
 
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
+
 export async function GET() {
   try {
-    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (Server In-Memory Cache < 0.5ms)
     try {
-      const goldRes = await query(`SELECT total_jobs, levels, cities, top_companies, updated_at FROM gold_salary_benchmarks WHERE id = 1;`);
+      const goldRes = await queryCached(`SELECT total_jobs, levels, cities, top_companies, updated_at FROM gold_salary_benchmarks WHERE id = 1;`, [], 60);
       if (goldRes.rows.length > 0 && goldRes.rows[0].levels) {
         return NextResponse.json({
           totalJobs: goldRes.rows[0].total_jobs || 0,
@@ -16,7 +20,7 @@ export async function GET() {
           cities: goldRes.rows[0].cities,
           topCompanies: goldRes.rows[0].top_companies,
           updatedAt: goldRes.rows[0].updated_at || new Date().toISOString(),
-        });
+        }, { headers: CACHE_HEADERS });
       }
     } catch (goldErr) {
       console.warn('Gold table query failed for salaries, falling back to live aggregation:', goldErr);

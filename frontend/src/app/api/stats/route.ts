@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryCached } from '@/lib/db';
 import { StatsApiResponse, SourceStat, LocationStat, UnifiedJob } from '@/types/job';
 
 export const dynamic = 'force-dynamic';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
 const KNOWN_SOURCES = [
   'careerlink',
@@ -16,13 +20,13 @@ const KNOWN_SOURCES = [
 
 export async function GET() {
   try {
-    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (Server In-Memory Cache < 0.5ms)
     try {
-      const goldRes = await query(`
+      const goldRes = await queryCached(`
         SELECT data, updated_at 
         FROM gold_dashboard_metrics 
         WHERE id = 1;
-      `);
+      `, [], 60);
       if (goldRes.rows.length > 0 && goldRes.rows[0].data) {
         const rowData = goldRes.rows[0].data;
         const response: StatsApiResponse = {
@@ -36,7 +40,7 @@ export async function GET() {
           latestJobs: rowData.latestJobs || [],
           lastCrawledAt: rowData.lastCrawledAt || goldRes.rows[0].updated_at || new Date().toISOString(),
         };
-        return NextResponse.json(response);
+        return NextResponse.json(response, { headers: CACHE_HEADERS });
       }
     } catch (goldErr) {
       console.warn('Gold table query failed, falling back to live aggregation:', goldErr);

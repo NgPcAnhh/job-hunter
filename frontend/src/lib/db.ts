@@ -42,4 +42,35 @@ export async function query(text: string, params?: any[]) {
   }
 }
 
+interface CacheEntry {
+  data: any;
+  expiresAt: number;
+}
+
+const memoryCache = new Map<string, CacheEntry>();
+
+export async function queryCached(text: string, params?: any[], ttlSeconds: number = 60) {
+  const cacheKey = `${text}::${JSON.stringify(params || [])}`;
+  const now = Date.now();
+  const cached = memoryCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
+  const result = await query(text, params);
+  memoryCache.set(cacheKey, {
+    data: result,
+    expiresAt: now + ttlSeconds * 1000,
+  });
+
+  // Keep cache size bounded to prevent memory leaks
+  if (memoryCache.size > 200) {
+    const firstKey = memoryCache.keys().next().value;
+    if (firstKey) memoryCache.delete(firstKey);
+  }
+
+  return result;
+}
+
 export default pool;

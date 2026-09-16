@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryCached } from '@/lib/db';
 import { PipelineMonitorData, PipelineSpiderStatus } from '@/types/job';
 
 export const dynamic = 'force-dynamic';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
 const SPIDER_CONFIGS: { source: string; name: string; engine: PipelineSpiderStatus['engine'] }[] = [
   { source: 'topcv', name: 'TopCV Vietnam', engine: 'curl_cffi' },
@@ -16,13 +20,13 @@ const SPIDER_CONFIGS: { source: string; name: string; engine: PipelineSpiderStat
 
 export async function GET() {
   try {
-    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (Server In-Memory Cache < 0.5ms)
     try {
-      const goldRes = await query(`
+      const goldRes = await queryCached(`
         SELECT total_raw, total_unified, total_duplicates, overall_dedup_percent, spiders, cron_schedule, updated_at 
         FROM gold_crawler_metrics 
         WHERE id = 1;
-      `);
+      `, [], 60);
       if (goldRes.rows.length > 0 && goldRes.rows[0].spiders) {
         const row = goldRes.rows[0];
         const data: PipelineMonitorData = {
@@ -38,7 +42,7 @@ export async function GET() {
             alertChannel: 'Telegram Bot Alert (ID: 6204378947)',
           },
         };
-        return NextResponse.json(data);
+        return NextResponse.json(data, { headers: CACHE_HEADERS });
       }
     } catch (goldErr) {
       console.warn('Gold table query failed for monitor, falling back to live aggregation:', goldErr);

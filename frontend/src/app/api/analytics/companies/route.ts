@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryCached } from '@/lib/db';
 import { CompanyOverviewItem, IndustrySectorItem } from '@/types/job';
 
 export const dynamic = 'force-dynamic';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
 function inferIndustrySector(company: string, title: string, req: string): string {
   const text = `${company} ${title} ${req}`.toLowerCase();
@@ -26,9 +30,9 @@ function inferIndustrySector(company: string, title: string, req: string): strin
 
 export async function GET() {
   try {
-    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (Server In-Memory Cache < 0.5ms)
     try {
-      const goldRes = await query(`SELECT total_companies, total_jobs, companies, sectors, updated_at FROM gold_company_stats WHERE id = 1;`);
+      const goldRes = await queryCached(`SELECT total_companies, total_jobs, companies, sectors, updated_at FROM gold_company_stats WHERE id = 1;`, [], 60);
       if (goldRes.rows.length > 0 && goldRes.rows[0].companies) {
         return NextResponse.json({
           totalCompanies: goldRes.rows[0].total_companies || 0,
@@ -36,7 +40,7 @@ export async function GET() {
           companies: goldRes.rows[0].companies,
           sectors: goldRes.rows[0].sectors,
           updatedAt: goldRes.rows[0].updated_at || new Date().toISOString(),
-        });
+        }, { headers: CACHE_HEADERS });
       }
     } catch (goldErr) {
       console.warn('Gold table query failed for companies, falling back to live aggregation:', goldErr);

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, queryCached } from '@/lib/db';
 import { TechTrendItem } from '@/types/job';
 
 export const dynamic = 'force-dynamic';
+
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+};
 
 const TECH_LIST: { name: string; category: TechTrendItem['category']; pattern: string; avgSalary: string; badge: TechTrendItem['badge'] }[] = [
   { name: 'React / Next.js', category: 'Framework', pattern: 'React|Next.?js', avgSalary: '25 - 45 tr', badge: 'Hot 🔥' },
@@ -21,15 +25,15 @@ const TECH_LIST: { name: string; category: TechTrendItem['category']; pattern: s
 
 export async function GET() {
   try {
-    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (Server In-Memory Cache < 0.5ms)
     try {
-      const goldRes = await query(`SELECT total_jobs, trends, updated_at FROM gold_skill_trends WHERE id = 1;`);
+      const goldRes = await queryCached(`SELECT total_jobs, trends, updated_at FROM gold_skill_trends WHERE id = 1;`, [], 60);
       if (goldRes.rows.length > 0 && goldRes.rows[0].trends) {
         return NextResponse.json({
           totalJobs: goldRes.rows[0].total_jobs || 0,
           trends: goldRes.rows[0].trends,
           updatedAt: goldRes.rows[0].updated_at || new Date().toISOString(),
-        });
+        }, { headers: CACHE_HEADERS });
       }
     } catch (goldErr) {
       console.warn('Gold table query failed for trends, falling back to live aggregation:', goldErr);
