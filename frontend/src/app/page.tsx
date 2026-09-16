@@ -364,11 +364,11 @@ export default function DashboardPage() {
                   <Flame size={13} color="#ea580c" /> Heatmap Nguồn Dữ Liệu
                 </span>
                 <span style={{ fontSize: '0.775rem', color: '#64748b', fontWeight: 600 }}>
-                  Thị phần tuyển dụng 7 nền tảng
+                  Thị phần tuyển dụng {stats?.sources?.length || 9} nền tảng
                 </span>
               </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                Heatmap Nguồn Tuyển Dụng (7 Nền Tảng)
+                Heatmap Nguồn Tuyển Dụng ({stats?.sources?.length || 9} Nền Tảng)
               </h3>
               <p style={{ fontSize: '0.825rem', color: '#475569', marginTop: '2px' }}>
                 Bản đồ nhiệt biểu thị mức độ sôi động & tỷ lệ đóng góp việc làm thực tế

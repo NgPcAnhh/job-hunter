@@ -37,6 +37,8 @@ KNOWN_SOURCES = [
     "vietnamworks",
     "jobsgo",
     "joboko",
+    "timviec365",
+    "topdev",
 ]
 
 TECH_LIST = [

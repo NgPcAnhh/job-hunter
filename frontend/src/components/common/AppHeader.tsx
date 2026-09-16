@@ -23,6 +23,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHeaderProps) {
   const [totalJobs, setTotalJobs] = useState<number | null>(null);
+  const [sourcesCount, setSourcesCount] = useState<number>(9);
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -65,6 +66,9 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
       if (res.ok) {
         const data = await res.json();
         setTotalJobs(data.totalUnified || 0);
+        if (data.sources && data.sources.length > 0) {
+          setSourcesCount(data.sources.length);
+        }
       }
     } catch (e) {
       console.error('Failed to fetch header stats:', e);
@@ -162,7 +166,7 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
               boxShadow: '0 0 0 2px rgba(22, 101, 52, 0.2)',
             }}
           />
-          <span style={{ fontWeight: 700 }}>7/7 nền tảng hoạt động</span>
+          <span style={{ fontWeight: 700 }}>{sourcesCount}/{sourcesCount} nền tảng hoạt động</span>
         </div>
       </div>
 
