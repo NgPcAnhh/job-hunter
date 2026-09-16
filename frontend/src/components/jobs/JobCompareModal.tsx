@@ -40,7 +40,7 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
         {/* Modal Header */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Layers size={20} color="#ff6b00" />
+            <Layers size={20} color="#ea580c" />
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
               Đối Chiếu & So Sánh ({jobs.length} Việc Làm)
             </h2>
@@ -49,11 +49,11 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
             onClick={onClose}
             style={{
               background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border-medium)',
               borderRadius: '8px',
               padding: '6px',
               cursor: 'pointer',
-              color: '#64748b',
+              color: '#475569',
             }}
           >
             <X size={20} />
@@ -74,7 +74,7 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
                 key={job.job_url}
                 style={{
                   background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-md)',
                   padding: '1.25rem',
                   display: 'flex',
@@ -91,7 +91,7 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
                     top: '10px',
                     right: '10px',
                     background: '#ffffff',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--border-medium)',
                     borderRadius: '50%',
                     width: '24px',
                     height: '24px',
@@ -99,7 +99,7 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    color: '#94a3b8',
+                    color: '#475569',
                   }}
                   title="Gỡ khỏi danh sách so sánh"
                 >
@@ -114,67 +114,67 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.35, marginTop: '2px' }}>
                     {job.job_title}
                   </h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 700, marginTop: '2px' }}>
                     {job.company_name}
                   </p>
                 </div>
 
                 {/* Criteria 1: Salary */}
-                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                <div style={{ background: '#fff7ed', border: '1px solid #fdba74', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
                   <span style={{ fontSize: '0.725rem', color: '#c2410c', fontWeight: 700, textTransform: 'uppercase' }}>
                     Mức Lương
                   </span>
-                  <p style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ea580c' }}>
+                  <p style={{ fontSize: '1.1rem', fontWeight: 800, color: '#c2410c' }}>
                     💰 {job.salary || 'Thương lượng'}
                   </p>
                 </div>
 
                 {/* Criteria 2: Location & Work Type */}
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.725rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
                     Khu Vực & Hình Thức
                   </span>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>
                     📍 {job.location_short || 'Chưa rõ'} • {job.work_type || 'Toàn thời gian'}
                   </p>
                 </div>
 
                 {/* Criteria 3: Level & Experience */}
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.725rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
                     Cấp Bậc & Kinh Nghiệm
                   </span>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>
                     🎖️ {job.level || 'Chưa xác định'} • ⏳ {job.experience || 'Không yêu cầu'}
                   </p>
                 </div>
 
                 {/* Criteria 4: Deadline */}
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.725rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
                     Hạn Nộp Hồ Sơ
                   </span>
-                  <p style={{ fontSize: '0.85rem', color: '#ea580c', fontWeight: 600 }}>
+                  <p style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700 }}>
                     📅 {job.deadline || 'Hết hạn theo quy định'}
                   </p>
                 </div>
 
                 {/* Criteria 5: Benefits */}
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.725rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
                     Quyền Lợi & Đãi Ngộ
                   </span>
-                  <div style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '0.8rem', color: '#475569', background: '#ffffff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #e2e8f0', marginTop: '2px', lineHeight: 1.5 }}>
+                  <div style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '0.8rem', color: '#1e293b', background: '#ffffff', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', marginTop: '2px', lineHeight: 1.5 }}>
                     {job.benefits || 'Được hưởng đầy đủ quyền lợi theo quy định công ty.'}
                   </div>
                 </div>
 
                 {/* Criteria 6: Requirements preview */}
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.725rem', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
                     Tóm Tắt Yêu Cầu
                   </span>
-                  <div style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '0.8rem', color: '#475569', background: '#ffffff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #e2e8f0', marginTop: '2px', lineHeight: 1.5 }}>
+                  <div style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '0.8rem', color: '#1e293b', background: '#ffffff', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', marginTop: '2px', lineHeight: 1.5 }}>
                     {job.job_requirements || 'Không có yêu cầu đặc thù.'}
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function JobCompareModal({ jobs, onClose, onRemoveJob }: JobCompa
 
         {/* Modal Footer */}
         <div className="modal-footer">
-          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
             Mẹo: Bạn có thể chọn tối đa 3 việc làm để so sánh trực diện trước khi ứng tuyển.
           </span>
           <button onClick={onClose} className="btn btn-secondary">

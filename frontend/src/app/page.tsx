@@ -98,7 +98,7 @@ export default function DashboardPage() {
           border: '1px solid #fed7aa',
           borderRadius: 'var(--radius-lg)',
           padding: '2.5rem 2rem',
-          boxShadow: '0 4px 20px -2px rgba(255, 107, 0, 0.08)',
+          boxShadow: '0 4px 20px -2px rgba(234, 88, 12, 0.08)',
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
@@ -106,25 +106,25 @@ export default function DashboardPage() {
       >
         <div style={{ maxWidth: '780px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', alignSelf: 'center', padding: '0.35rem 0.85rem', background: '#ffffff', borderRadius: '9999px', border: '1px solid #fdba74', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-            <Zap size={14} color="#ff6b00" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ea580c' }}>
+            <Zap size={14} color="#ea580c" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#c2410c' }}>
               Dữ liệu Việc làm IT Tự Động Hóa 100%
             </span>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>•</span>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Đồng bộ 2 lần/ngày</span>
+            <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>•</span>
+            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Đồng bộ 2 lần/ngày</span>
           </div>
 
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1.25 }}>
-            Khám Phá & Phân Tích <span style={{ color: '#ff6b00' }}>Thị Trường Việc Làm IT</span>
+            Khám Phá & Phân Tích <span style={{ color: '#ea580c' }}>Thị Trường Việc Làm IT</span>
           </h1>
-          <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.6 }}>
+          <p style={{ color: '#334155', fontSize: '1rem', lineHeight: 1.6 }}>
             Hệ thống tự động thu thập từ 7 website tuyển dụng hàng đầu (TopCV, VietnamWorks, CareerLink, JobsGO...), áp dụng thuật toán khử trùng lặp thông minh và lưu trữ tập trung trên Supabase.
           </p>
 
           {/* Hero Search Bar */}
           <form onSubmit={handleHeroSearchSubmit} style={{ display: 'flex', gap: '0.5rem', width: '100%', maxWidth: '640px', margin: '0.5rem auto 0 auto' }}>
             <div className="search-box-wrapper" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <Search size={20} className="search-icon" color="#94a3b8" />
+              <Search size={20} className="search-icon" color="#64748b" />
               <input
                 type="text"
                 className="search-input"
@@ -141,7 +141,7 @@ export default function DashboardPage() {
 
           {/* Popular Tag Chips */}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Gợi ý nhanh:</span>
+            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>Gợi ý nhanh:</span>
             {POPULAR_SEARCHES.map((tag) => (
               <button
                 key={tag}
@@ -149,22 +149,24 @@ export default function DashboardPage() {
                 onClick={() => router.push(`/jobs?q=${encodeURIComponent(tag)}`)}
                 style={{
                   background: '#ffffff',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #cbd5e1',
                   borderRadius: '6px',
                   padding: '3px 8px',
                   fontSize: '0.775rem',
                   fontWeight: 600,
-                  color: '#475569',
+                  color: '#334155',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#fdba74';
-                  e.currentTarget.style.color = '#ea580c';
+                  e.currentTarget.style.color = '#c2410c';
+                  e.currentTarget.style.background = '#fff7ed';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.color = '#475569';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.color = '#334155';
+                  e.currentTarget.style.background = '#ffffff';
                 }}
               >
                 {tag}
@@ -194,38 +196,38 @@ export default function DashboardPage() {
           }}
         >
           {/* Card 1 */}
-          <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ff6b00' }}>
+          <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ea580c' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
+              <span style={{ color: '#475569', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
                 Tổng Tin Tuyển Dụng
               </span>
               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Briefcase size={16} color="#ff6b00" />
+                <Briefcase size={16} color="#ea580c" />
               </div>
             </div>
-            <p style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0.35rem 0', color: '#ff6b00', letterSpacing: '-0.02em' }}>
+            <p style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0.35rem 0', color: '#c2410c', letterSpacing: '-0.02em' }}>
               {loading ? '...' : stats?.totalUnified || 0}
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>
               <CheckCircle2 size={13} />
               Đã hợp nhất vào all_jobs_unified
             </div>
           </div>
 
           {/* Card 2 */}
-          <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ef4444' }}>
+          <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #dc2626' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
+              <span style={{ color: '#475569', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
                 Khử Trùng Lặp (Fuzzy ≥ 90%)
               </span>
               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Layers size={16} color="#ef4444" />
+                <Layers size={16} color="#dc2626" />
               </div>
             </div>
             <p style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0.35rem 0', color: '#dc2626', letterSpacing: '-0.02em' }}>
               {loading ? '...' : stats?.totalDuplicatesDetected || 0}
             </p>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ fontSize: '0.75rem', color: '#475569' }}>
               Gộp tin đăng trùng từ nhiều web
             </span>
           </div>
@@ -233,17 +235,17 @@ export default function DashboardPage() {
           {/* Card 3 */}
           <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #16a34a' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
+              <span style={{ color: '#475569', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
                 Nguồn Dữ Liệu
               </span>
               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Globe size={16} color="#16a34a" />
               </div>
             </div>
-            <p style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0.35rem 0', color: '#16a34a', letterSpacing: '-0.02em' }}>
+            <p style={{ fontSize: '2.2rem', fontWeight: 800, margin: '0.35rem 0', color: '#166534', letterSpacing: '-0.02em' }}>
               7 / 7
             </p>
-            <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>
               ● 100% Sẵn sàng hoạt động
             </span>
           </div>
@@ -251,17 +253,17 @@ export default function DashboardPage() {
           {/* Card 4 */}
           <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #0284c7' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
+              <span style={{ color: '#475569', fontSize: '0.825rem', fontWeight: 700, textTransform: 'uppercase' }}>
                 Database Supabase
               </span>
               <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Database size={16} color="#0284c7" />
               </div>
             </div>
-            <p style={{ fontSize: '1.85rem', fontWeight: 800, margin: '0.45rem 0', color: '#0284c7', letterSpacing: '-0.02em' }}>
+            <p style={{ fontSize: '1.85rem', fontWeight: 800, margin: '0.45rem 0', color: '#0369a1', letterSpacing: '-0.02em' }}>
               Connected
             </p>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ fontSize: '0.75rem', color: '#475569' }}>
               PostgreSQL Pooler IPv4
             </span>
           </div>
@@ -279,11 +281,11 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   Bản Đồ Nguồn Tuyển Dụng (7 Nền Tảng)
                 </h3>
-                <p style={{ fontSize: '0.825rem', color: '#64748b', marginTop: '2px' }}>
+                <p style={{ fontSize: '0.825rem', color: '#475569', marginTop: '2px' }}>
                   Số lượng tin cào thô (Raw) và tin đã chuẩn hóa đồng bộ vào bảng tổng
                 </p>
               </div>
-              <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 Xem tất cả &rarr;
               </Link>
             </div>
@@ -297,7 +299,7 @@ export default function DashboardPage() {
                     href={`/jobs?source=${src.source}`}
                     style={{
                       background: '#ffffff',
-                      border: '1px solid #eef0f3',
+                      border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '1rem',
                       display: 'flex',
@@ -305,36 +307,37 @@ export default function DashboardPage() {
                       justifyContent: 'space-between',
                       gap: '0.75rem',
                       transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
                     }}
                     className="source-card-hover"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = '#fdba74';
-                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 107, 0, 0.1)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(234, 88, 12, 0.1)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#eef0f3';
-                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.03)';
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className={`badge ${getSourceBadgeClass(src.source)}`} style={{ fontSize: '0.65rem' }}>
                         {src.source.toUpperCase()}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>{percent}%</span>
+                      <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>{percent}%</span>
                     </div>
 
                     <div>
                       <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
-                        {src.unifiedCount} <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>jobs</span>
+                        {src.unifiedCount} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>jobs</span>
                       </p>
-                      <span style={{ fontSize: '0.725rem', color: '#64748b' }}>
+                      <span style={{ fontSize: '0.725rem', color: '#475569' }}>
                         Raw: {src.rawCount} bản ghi
                       </span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '4px', background: '#f1f5f9', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${percent}%`, height: '100%', background: '#ff6b00', borderRadius: '2px' }} />
+                    <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${percent}%`, height: '100%', background: '#ea580c', borderRadius: '2px' }} />
                     </div>
                   </Link>
                 );
@@ -349,9 +352,9 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   Việc Làm Mới Đồng Bộ Gần Đây
                 </h3>
-                <p style={{ fontSize: '0.825rem', color: '#64748b' }}>Tin tuyển dụng vừa được pipeline thu thập vào Supabase</p>
+                <p style={{ fontSize: '0.825rem', color: '#475569' }}>Tin tuyển dụng vừa được pipeline thu thập vào Supabase</p>
               </div>
-              <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
+              <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700 }}>
                 Xem bộ lọc chi tiết &rarr;
               </Link>
             </div>
@@ -365,7 +368,7 @@ export default function DashboardPage() {
                     style={{
                       padding: '1rem',
                       background: '#ffffff',
-                      border: '1px solid #eef0f3',
+                      border: '1px solid var(--border-subtle)',
                       borderRadius: 'var(--radius-sm)',
                       cursor: 'pointer',
                       display: 'flex',
@@ -379,7 +382,7 @@ export default function DashboardPage() {
                       e.currentTarget.style.background = '#fff7ed';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#eef0f3';
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
                       e.currentTarget.style.background = '#ffffff';
                     }}
                   >
@@ -388,7 +391,7 @@ export default function DashboardPage() {
                         <img
                           src={job.company_logo}
                           alt={job.company_name}
-                          style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'contain', border: '1px solid #e2e8f0', background: 'white', padding: '2px', flexShrink: 0 }}
+                          style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'contain', border: '1px solid #cbd5e1', background: 'white', padding: '2px', flexShrink: 0 }}
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}
@@ -404,20 +407,20 @@ export default function DashboardPage() {
                           <span className={`badge ${getSourceBadgeClass(job.source)}`} style={{ fontSize: '0.65rem' }}>
                             {job.source.toUpperCase()}
                           </span>
-                          <span style={{ fontSize: '0.8rem', color: '#ea580c', fontWeight: 700 }}>
+                          <span style={{ fontSize: '0.8rem', color: '#c2410c', fontWeight: 700 }}>
                             {job.salary || 'Thương lượng'}
                           </span>
                         </div>
                         <h4 style={{ fontSize: '0.925rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {job.job_title}
                         </h4>
-                        <p style={{ fontSize: '0.775rem', color: '#64748b' }}>
+                        <p style={{ fontSize: '0.775rem', color: '#475569' }}>
                           {job.company_name} • {job.location_short || 'Chưa rõ'}
                         </p>
                       </div>
                     </div>
 
-                    <span style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700, flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700, flexShrink: 0 }}>
                       Chi tiết &rarr;
                     </span>
                   </div>
@@ -434,7 +437,7 @@ export default function DashboardPage() {
           {/* Top Locations Breakdown */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={18} color="#ff6b00" /> Phân Bổ Theo Khu Vực
+              <MapPin size={18} color="#ea580c" /> Phân Bổ Theo Khu Vực
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -446,10 +449,10 @@ export default function DashboardPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                         <span style={{ fontWeight: 600, color: '#334155' }}>{loc.location}</span>
                         <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                          {loc.count} <span style={{ color: '#94a3b8', fontWeight: 400 }}>({locPercent}%)</span>
+                          {loc.count} <span style={{ color: '#64748b', fontWeight: 500 }}>({locPercent}%)</span>
                         </span>
                       </div>
-                      <div style={{ width: '100%', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
                         <div style={{ width: `${Math.max(8, locPercent)}%`, height: '100%', background: 'var(--accent-gradient)', borderRadius: '3px' }} />
                       </div>
                     </div>
@@ -462,23 +465,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Deduplication & Storage Architecture Info */}
-          <div className="glass-panel" style={{ padding: '1.5rem', background: '#fafbfc' }}>
+          <div className="glass-panel" style={{ padding: '1.5rem', background: '#ffffff' }}>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <ShieldCheck size={18} color="#16a34a" /> Khử Trùng Lặp 2-Stage
+              <ShieldCheck size={18} color="#166534" /> Khử Trùng Lặp 2-Stage
             </h3>
-            <p style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.825rem', color: '#334155', lineHeight: 1.6 }}>
               Mỗi website cào dữ liệu thô vào bảng riêng <code>jobs_&lt;source&gt;</code>. Sau đó module <code>sync_unified.py</code> sử dụng thuật toán <strong>Fuzzy SequenceMatcher ≥ 90%</strong> để đối soát Tiêu đề, Công ty và Mức lương, tự động gộp các tin đăng trùng lặp vào <code>all_jobs_unified</code>.
             </p>
-            <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Độ chính xác khử trùng:</span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#16a34a' }}>90% - 95%</span>
+            <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>Độ chính xác khử trùng:</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#166534' }}>90% - 95%</span>
             </div>
           </div>
 
           {/* Quick Action Box */}
-          <div style={{ background: 'var(--accent-gradient)', borderRadius: 'var(--radius-md)', padding: '1.5rem', color: 'white', display: 'flex', flexDirection: 'column', gap: '0.75rem', boxShadow: '0 8px 20px -4px rgba(255, 107, 0, 0.35)' }}>
+          <div style={{ background: 'var(--accent-gradient)', borderRadius: 'var(--radius-md)', padding: '1.5rem', color: 'white', display: 'flex', flexDirection: 'column', gap: '0.75rem', boxShadow: '0 8px 20px -4px rgba(234, 88, 12, 0.35)' }}>
             <h4 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Bạn Cần Tìm Việc Làm Cụ Thể?</h4>
-            <p style={{ fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.85rem', opacity: 0.95, lineHeight: 1.5 }}>
               Mở ngay màn hình bộ lọc chuyên sâu để tra cứu theo cấp bậc, kinh nghiệm và nguồn mong muốn.
             </p>
             <Link
@@ -486,7 +489,7 @@ export default function DashboardPage() {
               style={{
                 marginTop: '0.5rem',
                 background: '#ffffff',
-                color: '#ea580c',
+                color: '#c2410c',
                 padding: '0.65rem 1.25rem',
                 borderRadius: '8px',
                 fontWeight: 700,

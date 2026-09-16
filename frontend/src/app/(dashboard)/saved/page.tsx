@@ -194,7 +194,7 @@ export default function SavedJobsPage() {
               margin: '0 auto 1rem',
             }}
           >
-            <FolderHeart size={32} color="#ff6b00" />
+            <FolderHeart size={32} color="#ea580c" />
           </div>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>
             {savedItems.length === 0 ? 'Bạn chưa lưu công việc nào' : 'Không có việc làm nào ở trạng thái này'}
@@ -269,7 +269,7 @@ export default function SavedJobsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
                       <span className="badge badge-primary">{job.source.toUpperCase()}</span>
                       {job.level && <span className="badge">{job.level}</span>}
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                         Lưu ngày: {new Date(item.savedAt).toLocaleDateString('vi-VN')}
                       </span>
                     </div>
@@ -286,19 +286,19 @@ export default function SavedJobsPage() {
                       {job.job_title}
                     </h3>
 
-                    <p style={{ fontSize: '0.875rem', color: '#475569', marginTop: '0.2rem' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#334155', marginTop: '0.2rem' }}>
                       {job.company_name}
                     </p>
 
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap', fontSize: '0.8rem' }}>
-                      <span style={{ color: '#ea580c', fontWeight: 700 }}>
+                      <span style={{ color: '#c2410c', fontWeight: 700 }}>
                         💰 {job.salary || 'Thương lượng'}
                       </span>
                       <span style={{ color: '#64748b' }}>
                         📍 {job.location_short || 'Chưa rõ'}
                       </span>
                       {job.deadline && (
-                        <span style={{ color: '#ea580c' }}>
+                        <span style={{ color: '#c2410c', fontWeight: 600 }}>
                           📅 Hạn: {job.deadline}
                         </span>
                       )}
@@ -355,10 +355,10 @@ export default function SavedJobsPage() {
                       onClick={() => handleRemove(job.job_url)}
                       style={{
                         background: '#fef2f2',
-                        border: '1px solid #fee2e2',
+                        border: '1px solid #fecaca',
                         borderRadius: '6px',
                         padding: '7px',
-                        color: '#ef4444',
+                        color: '#dc2626',
                         cursor: 'pointer',
                       }}
                       title="Xóa khỏi danh sách lưu"

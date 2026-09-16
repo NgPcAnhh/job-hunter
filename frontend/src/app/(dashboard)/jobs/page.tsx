@@ -234,7 +234,7 @@ export default function JobsPage() {
         <aside className="filter-sidebar">
           <div className="filter-sidebar-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <SlidersHorizontal size={18} color="#ff6b00" />
+              <SlidersHorizontal size={18} color="#ea580c" />
               <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Bộ Lọc Tuyển Dụng</h2>
             </div>
             {hasActiveFilters && (
@@ -243,7 +243,7 @@ export default function JobsPage() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#ea580c',
+                  color: '#c2410c',
                   fontSize: '0.75rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -281,12 +281,12 @@ export default function JobsPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    {selectedSource === s.source && <Check size={14} color="#ff6b00" />}
+                    {selectedSource === s.source && <Check size={14} color="#ea580c" />}
                     <span className={`badge ${getSourceBadgeClass(s.source)}`} style={{ fontSize: '0.65rem' }}>
                       {s.source.toUpperCase()}
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{s.count}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>{s.count}</span>
                 </div>
               ))}
             </div>
@@ -308,7 +308,7 @@ export default function JobsPage() {
                     }}
                   >
                     <span>{loc === 'all' ? 'Tất cả khu vực' : loc}</span>
-                    {isSelected && <Check size={14} color="#ff6b00" />}
+                    {isSelected && <Check size={14} color="#ea580c" />}
                   </div>
                 );
               })}
@@ -337,7 +337,7 @@ export default function JobsPage() {
                     }}
                   >
                     <span>{lvl.label}</span>
-                    {isSelected && <Check size={14} color="#ff6b00" />}
+                    {isSelected && <Check size={14} color="#ea580c" />}
                   </div>
                 );
               })}
@@ -367,7 +367,7 @@ export default function JobsPage() {
                     }}
                   >
                     <span>{exp.label}</span>
-                    {isSelected && <Check size={14} color="#ff6b00" />}
+                    {isSelected && <Check size={14} color="#ea580c" />}
                   </div>
                 );
               })}
@@ -397,7 +397,7 @@ export default function JobsPage() {
                     right: '12px',
                     background: 'none',
                     border: 'none',
-                    color: '#94a3b8',
+                    color: '#64748b',
                     cursor: 'pointer',
                   }}
                 >
@@ -408,7 +408,7 @@ export default function JobsPage() {
 
             {/* Quick Search Chips */}
             <div className="quick-tags-container">
-              <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600 }}>Gợi ý:</span>
+              <span style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 700 }}>Gợi ý:</span>
               {QUICK_TAGS.map((tag) => (
                 <button
                   key={tag}
@@ -431,12 +431,12 @@ export default function JobsPage() {
                 flexWrap: 'wrap',
                 gap: '0.75rem',
                 paddingTop: '0.75rem',
-                borderTop: '1px solid #f1f5f9',
+                borderTop: '1px solid var(--border-subtle)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>
-                  Tìm thấy <span style={{ color: '#ff6b00' }}>{total}</span> việc làm
+                  Tìm thấy <span style={{ color: '#c2410c' }}>{total}</span> việc làm
                 </span>
 
                 {/* Active Filter Badges */}
@@ -483,15 +483,23 @@ export default function JobsPage() {
                   }}
                   title="Xuất danh sách công việc hiện tại ra file CSV chuẩn UTF-8 tương thích Excel"
                 >
-                  <Download size={14} color="#64748b" />
+                  <Download size={14} color="#475569" />
                   <span>Xuất Excel ({jobs.length})</span>
                 </button>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600 }}>Sắp xếp:</span>
+                  <span style={{ fontSize: '0.825rem', color: '#475569', fontWeight: 700 }}>Sắp xếp:</span>
                   <select
                     className="filter-select"
-                    style={{ padding: '0.45rem 2rem 0.45rem 0.75rem', fontSize: '0.825rem' }}
+                    style={{
+                      padding: '0.45rem 2rem 0.45rem 0.75rem',
+                      fontSize: '0.825rem',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: '6px',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: 600,
+                    }}
                     value={sortBy}
                     onChange={(e) => {
                       setSortBy(e.target.value);
@@ -548,17 +556,18 @@ export default function JobsPage() {
                   height: '64px',
                   borderRadius: '50%',
                   background: '#fff7ed',
+                  border: '1px solid #fed7aa',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Search size={28} color="#ff6b00" />
+                <Search size={28} color="#ea580c" />
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
                 Không tìm thấy việc làm phù hợp
               </h3>
-              <p style={{ color: '#64748b', maxWidth: '460px', fontSize: '0.9rem' }}>
+              <p style={{ color: '#475569', maxWidth: '460px', fontSize: '0.9rem' }}>
                 Không có bài đăng nào khớp với điều kiện lọc hiện tại. Thử bỏ chọn một số bộ lọc hoặc gõ từ khóa khác.
               </p>
               <button onClick={handleResetFilters} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
@@ -598,9 +607,9 @@ export default function JobsPage() {
                           <span
                             className="badge"
                             style={{
-                              background: job.match_score >= 50 ? '#fff7ed' : '#f8fafc',
-                              color: job.match_score >= 50 ? '#ea580c' : '#475569',
-                              borderColor: job.match_score >= 50 ? '#fdba74' : '#e2e8f0',
+                              background: job.match_score >= 50 ? '#fff7ed' : '#f1f5f9',
+                              color: job.match_score >= 50 ? '#c2410c' : '#334155',
+                              borderColor: job.match_score >= 50 ? '#fdba74' : '#cbd5e1',
                               fontWeight: 700,
                               fontSize: '0.7rem',
                             }}
@@ -609,7 +618,7 @@ export default function JobsPage() {
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
                         {job.posted_date || 'Mới cập nhật'}
                       </span>
                     </div>
@@ -627,7 +636,7 @@ export default function JobsPage() {
                             objectFit: 'contain',
                             background: '#ffffff',
                             padding: '3px',
-                            border: '1px solid #edf2f7',
+                            border: '1px solid var(--border-medium)',
                             flexShrink: 0,
                           }}
                           onError={(e) => {
@@ -648,7 +657,7 @@ export default function JobsPage() {
                             fontWeight: 800,
                             color: 'white',
                             flexShrink: 0,
-                            boxShadow: '0 2px 6px rgba(255,107,0,0.18)',
+                            boxShadow: '0 2px 6px rgba(234, 88, 12, 0.25)',
                           }}
                         >
                           {job.company_name?.charAt(0)?.toUpperCase() || 'J'}
@@ -662,12 +671,12 @@ export default function JobsPage() {
                         <p
                           style={{
                             fontSize: '0.825rem',
-                            color: '#64748b',
+                            color: '#475569',
                             marginTop: '0.2rem',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            fontWeight: 500,
+                            fontWeight: 600,
                           }}
                           title={job.company_name}
                         >
@@ -682,7 +691,7 @@ export default function JobsPage() {
                         padding: '0.5rem 0.75rem',
                         background: '#fff7ed',
                         borderRadius: '8px',
-                        border: '1px solid #fed7aa',
+                        border: '1px solid #fdba74',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -692,7 +701,7 @@ export default function JobsPage() {
                         💰 {job.salary || 'Thương lượng'}
                       </span>
                       {job.level && (
-                        <span style={{ fontSize: '0.725rem', color: '#64748b', fontWeight: 600, background: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '0.725rem', color: '#334155', fontWeight: 700, background: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                           {job.level}
                         </span>
                       )}
@@ -701,7 +710,7 @@ export default function JobsPage() {
                     {/* Metadata details */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
                       <div className="job-meta-item">
-                        <MapPin size={14} color="#ff6b00" style={{ flexShrink: 0 }} />
+                        <MapPin size={14} color="#ea580c" style={{ flexShrink: 0 }} />
                         <span>{job.location_short || 'Chưa rõ địa điểm'}</span>
                       </div>
                       <div className="job-meta-item">
@@ -723,7 +732,7 @@ export default function JobsPage() {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         paddingTop: '0.65rem',
-                        borderTop: '1px solid #f1f5f9',
+                        borderTop: '1px solid var(--border-subtle)',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -732,7 +741,7 @@ export default function JobsPage() {
                           onClick={(e) => handleToggleSaveJob(job, e)}
                           style={{
                             background: savedUrls.has(job.job_url) ? '#fff7ed' : '#ffffff',
-                            border: `1px solid ${savedUrls.has(job.job_url) ? '#fdba74' : '#e2e8f0'}`,
+                            border: `1px solid ${savedUrls.has(job.job_url) ? '#fdba74' : 'var(--border-medium)'}`,
                             borderRadius: '6px',
                             padding: '4px 8px',
                             cursor: 'pointer',
@@ -740,7 +749,7 @@ export default function JobsPage() {
                             alignItems: 'center',
                             gap: '4px',
                             fontSize: '0.75rem',
-                            color: savedUrls.has(job.job_url) ? '#ea580c' : '#475569',
+                            color: savedUrls.has(job.job_url) ? '#c2410c' : '#334155',
                             fontWeight: 600,
                             transition: 'all 0.15s ease',
                           }}
@@ -755,7 +764,7 @@ export default function JobsPage() {
                           onClick={(e) => handleToggleCompare(job, e)}
                           style={{
                             background: compareJobs.some((j) => j.job_url === job.job_url) ? '#eff6ff' : '#ffffff',
-                            border: `1px solid ${compareJobs.some((j) => j.job_url === job.job_url) ? '#93c5fd' : '#e2e8f0'}`,
+                            border: `1px solid ${compareJobs.some((j) => j.job_url === job.job_url) ? '#93c5fd' : 'var(--border-medium)'}`,
                             borderRadius: '6px',
                             padding: '4px 8px',
                             cursor: 'pointer',
@@ -763,19 +772,19 @@ export default function JobsPage() {
                             alignItems: 'center',
                             gap: '4px',
                             fontSize: '0.75rem',
-                            color: compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#475569',
+                            color: compareJobs.some((j) => j.job_url === job.job_url) ? '#1d4ed8' : '#334155',
                             fontWeight: 600,
                             transition: 'all 0.15s ease',
                           }}
                           title="Thêm vào bảng so sánh"
                         >
-                          <Scale size={13} color={compareJobs.some((j) => j.job_url === job.job_url) ? '#2563eb' : '#64748b'} />
+                          <Scale size={13} color={compareJobs.some((j) => j.job_url === job.job_url) ? '#1d4ed8' : '#64748b'} />
                           <span>{compareJobs.some((j) => j.job_url === job.job_url) ? 'Đang so sánh' : 'So sánh'}</span>
                         </button>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <span style={{ fontSize: '0.825rem', color: '#ff6b00', fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.825rem', color: '#c2410c', fontWeight: 700 }}>
                           Chi tiết &rarr;
                         </span>
                         <button
@@ -785,9 +794,9 @@ export default function JobsPage() {
                           }}
                           style={{
                             background: '#ffffff',
-                            border: '1px solid #e2e8f0',
+                            border: '1px solid var(--border-medium)',
                             borderRadius: '6px',
-                            color: '#64748b',
+                            color: '#475569',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -822,7 +831,7 @@ export default function JobsPage() {
                   const showEllipsis = idx > 0 && p - arr[idx - 1] > 1;
                   return (
                     <React.Fragment key={p}>
-                      {showEllipsis && <span style={{ color: '#94a3b8', padding: '0 4px' }}>...</span>}
+                      {showEllipsis && <span style={{ color: '#64748b', padding: '0 4px' }}>...</span>}
                       <button
                         className={`pagination-btn ${page === p ? 'active' : ''}`}
                         onClick={() => setPage(p)}
@@ -841,7 +850,7 @@ export default function JobsPage() {
                 <ChevronRight size={16} />
               </button>
 
-              <span style={{ fontSize: '0.85rem', color: '#64748b', marginLeft: '1rem', fontWeight: 500 }}>
+              <span style={{ fontSize: '0.85rem', color: '#475569', marginLeft: '1rem', fontWeight: 600 }}>
                 Trang {page} / {totalPages}
               </span>
             </div>

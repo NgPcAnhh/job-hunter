@@ -1,41 +1,42 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Modern Simplize-Inspired Design System: Crisp clean white surfaces, subtle dividers, vibrant warm orange */
-  --bg-primary: #f8fafc;
+  /* Balanced Modern Design System: High-contrast readable typography, crisp container borders, warm amber-orange accent */
+  --bg-primary: #f1f5f9;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-card-hover: #ffffff;
   
-  --border-subtle: #edf2f7;
-  --border-medium: #e2e8f0;
-  --border-focus: #ff6b00;
-  --border-accent: rgba(255, 107, 0, 0.35);
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-focus: #ea580c;
+  --border-accent: rgba(234, 88, 12, 0.35);
 
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
 
-  /* Simplize Signature Warm Orange */
-  --accent-primary: #ff6b00;
-  --accent-primary-hover: #ea580c;
-  --accent-gradient: linear-gradient(135deg, #ff6b00 0%, #ff8533 100%);
+  /* Signature Warm Orange / Amber (Refined for high contrast & eye comfort) */
+  --accent-primary: #ea580c;
+  --accent-primary-hover: #c2410c;
+  --accent-text: #c2410c;
+  --accent-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
   --accent-gradient-subtle: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
   --accent-subtle: #fff7ed;
-  --accent-border-subtle: #fed7aa;
+  --accent-border-subtle: #fdba74;
 
-  --success: #16a34a;
-  --warning: #d97706;
-  --info: #0284c7;
+  --success: #15803d;
+  --warning: #b45309;
+  --info: #0369a1;
 
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 18px;
 
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
-  --shadow-hover: 0 10px 25px -5px rgba(255, 107, 0, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-  --shadow-glow: 0 4px 14px 0 rgba(255, 107, 0, 0.25);
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
+  --shadow-hover: 0 10px 20px -5px rgba(234, 88, 12, 0.15), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+  --shadow-glow: 0 4px 14px 0 rgba(234, 88, 12, 0.25);
 
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -70,11 +71,11 @@ a {
 
 .site-header {
   background: #ffffff;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-medium);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .container {
@@ -95,7 +96,7 @@ a {
 
 .glass-panel:hover,
 .analytics-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--border-medium);
 }
 
 /* Button styles */
@@ -118,24 +119,25 @@ a {
 .btn-primary {
   background: var(--accent-gradient);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.28);
 }
 
 .btn-primary:hover {
   background: var(--accent-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.38);
 }
 
 .btn-secondary {
   background: #ffffff;
   color: var(--text-primary);
   border: 1px solid var(--border-medium);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .btn-secondary:hover {
   background: #f8fafc;
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
   color: var(--accent-primary);
 }
 
@@ -143,11 +145,11 @@ a {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.22rem 0.55rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: 0.725rem;
   font-weight: 600;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-medium);
   background: #f1f5f9;
   color: var(--text-secondary);
   line-height: 1.2;
@@ -156,57 +158,57 @@ a {
 .badge-primary {
   background: var(--accent-subtle);
   border-color: var(--accent-border-subtle);
-  color: var(--accent-primary);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
-/* Brand Badges */
+/* Brand Badges with Crisp Contrast */
 .badge-topcv {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
 }
 
 .badge-vietnamworks {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
 }
 
 .badge-careerlink {
-  background: #fff1f2;
-  border-color: #fecdd3;
-  color: #be123c;
+  background: #ffe4e6;
+  border-color: #fda4af;
+  color: #9f1239;
 }
 
 .badge-careerviet {
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
   color: #0369a1;
 }
 
 .badge-jobsgo {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
-  color: #6d28d9;
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #5b21b6;
 }
 
 .badge-vieclam24h {
-  background: #ecfeff;
-  border-color: #a5f3fc;
+  background: #cffafe;
+  border-color: #67e8f9;
   color: #0e7490;
 }
 
 .badge-joboko {
-  background: #faf5ff;
-  border-color: #e9d5ff;
-  color: #7e22ce;
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+  color: #6b21a8;
 }
 
 .badge-multi {
-  background: #fff7ed;
-  border-color: #fdba74;
-  color: #c2410c;
+  background: #ffedd5;
+  border-color: #fb923c;
+  color: #9a3412;
   font-weight: 700;
 }
 
@@ -247,7 +249,7 @@ a {
 .filter-group {
   margin-bottom: 1.25rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .filter-group:last-child {
@@ -259,7 +261,7 @@ a {
 .filter-title {
   font-size: 0.825rem;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 0.65rem;
@@ -278,23 +280,25 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 0.5rem;
+  padding: 0.45rem 0.6rem;
   border-radius: var(--radius-xs);
   cursor: pointer;
   transition: all 0.15s ease;
   font-size: 0.875rem;
-  color: #334155;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
 }
 
 .filter-checkbox-item:hover {
-  background: #f8fafc;
-  color: var(--accent-primary);
+  background: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .filter-checkbox-item.active {
   background: #fff7ed;
-  color: #ea580c;
-  font-weight: 600;
+  color: var(--accent-text);
+  font-weight: 700;
+  border-color: #fed7aa;
 }
 
 /* Search Box & Feed Toolbar */
@@ -330,9 +334,13 @@ a {
   transition: all 0.2s ease;
 }
 
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
 .search-input:focus {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18);
 }
 
 .search-icon {
@@ -351,27 +359,27 @@ a {
 }
 
 .quick-tag-chip {
-  padding: 0.25rem 0.65rem;
+  padding: 0.28rem 0.75rem;
   border-radius: var(--radius-xs);
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #475569;
+  background: #ffffff;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.15s ease;
 }
 
 .quick-tag-chip:hover {
   background: #fff7ed;
-  border-color: #fdba74;
-  color: #ea580c;
+  border-color: var(--accent-border-subtle);
+  color: var(--accent-text);
 }
 
 /* Job Card Styling */
 .job-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #edf2f7;
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 1.25rem 1.35rem;
   display: flex;
@@ -380,20 +388,20 @@ a {
   gap: 0.85rem;
   cursor: pointer;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
 .job-card:hover {
   transform: translateY(-2px);
-  border-color: #fdba74;
-  box-shadow: 0 10px 25px -5px rgba(255, 107, 0, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+  border-color: var(--accent-border-subtle);
+  box-shadow: var(--shadow-hover);
 }
 
 .job-card-title {
   font-size: 1.05rem;
   font-weight: 750;
-  color: #0f172a;
+  color: var(--text-primary);
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -410,7 +418,7 @@ a {
 .job-salary-tag {
   font-size: 0.95rem;
   font-weight: 800;
-  color: #ea580c;
+  color: var(--accent-text);
   letter-spacing: -0.01em;
 }
 
@@ -419,7 +427,7 @@ a {
   align-items: center;
   gap: 0.45rem;
   font-size: 0.825rem;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .job-meta-item span {
@@ -432,7 +440,7 @@ a {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -445,14 +453,14 @@ a {
 
 .modal-content {
   background: #ffffff;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
   max-width: 840px;
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
   overflow: hidden;
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -491,7 +499,7 @@ a {
 .detail-section-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
@@ -499,13 +507,13 @@ a {
 }
 
 .detail-section-content {
-  color: #334155;
+  color: var(--text-primary);
   font-size: 0.9rem;
   white-space: pre-line;
   background: #f8fafc;
   padding: 1.15rem;
   border-radius: var(--radius-sm);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
 }
 
 /* Pagination */
@@ -537,18 +545,18 @@ a {
 .pagination-btn:hover:not(:disabled) {
   background: var(--accent-subtle);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--accent-text);
 }
 
 .pagination-btn.active {
   background: var(--accent-primary);
   color: #ffffff;
   border-color: var(--accent-primary);
-  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
 }
 
 .pagination-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 

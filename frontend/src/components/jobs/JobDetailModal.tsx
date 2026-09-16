@@ -157,22 +157,22 @@ export default function JobDetailModal({
                 )}
                 {job.level && <span className="badge">{job.level}</span>}
               </div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#111827', lineHeight: 1.3 }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
                 {job.job_title}
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', color: '#4b5563' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', color: '#334155' }}>
                 <Building size={16} color="#64748b" />
                 {job.company_url ? (
                   <a
                     href={job.company_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ textDecoration: 'underline', color: '#ff6b00', fontWeight: 600 }}
+                    style={{ textDecoration: 'underline', color: '#c2410c', fontWeight: 700 }}
                   >
                     {job.company_name}
                   </a>
                 ) : (
-                  <span style={{ fontWeight: 600 }}>{job.company_name}</span>
+                  <span style={{ fontWeight: 700, color: '#1e293b' }}>{job.company_name}</span>
                 )}
               </div>
             </div>
@@ -185,9 +185,10 @@ export default function JobDetailModal({
               style={{
                 padding: '0.45rem 0.75rem',
                 fontSize: '0.8rem',
-                color: saved ? '#ea580c' : '#475569',
-                borderColor: saved ? '#fdba74' : '#e2e8f0',
+                color: saved ? '#c2410c' : '#334155',
+                borderColor: saved ? '#fdba74' : 'var(--border-medium)',
                 background: saved ? '#fff7ed' : '#ffffff',
+                fontWeight: 600,
               }}
               title={saved ? 'Bỏ lưu việc làm' : 'Lưu vào danh sách theo dõi'}
             >
@@ -201,17 +202,17 @@ export default function JobDetailModal({
               style={{ padding: '0.45rem 0.65rem', fontSize: '0.8rem' }}
               title="Sao chép liên kết"
             >
-              {copied ? <Check size={15} color="#16a34a" /> : <Share2 size={15} color="#64748b" />}
+              {copied ? <Check size={15} color="#15803d" /> : <Share2 size={15} color="#475569" />}
             </button>
 
             <button
               onClick={onClose}
               style={{
                 background: '#f1f5f9',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--border-medium)',
                 borderRadius: '8px',
                 padding: '6px',
-                color: '#64748b',
+                color: '#475569',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -233,24 +234,24 @@ export default function JobDetailModal({
               background: '#f8fafc',
               padding: '1.15rem',
               borderRadius: 'var(--radius-sm)',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border-subtle)',
             }}
           >
             <div className="job-meta-item">
               <DollarSign size={18} color="#ea580c" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Mức lương</span>
-                <p style={{ fontWeight: 800, color: '#ea580c', fontSize: '1rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Mức lương</span>
+                <p style={{ fontWeight: 800, color: '#c2410c', fontSize: '1rem' }}>
                   {job.salary || 'Thương lượng'}
                 </p>
               </div>
             </div>
 
             <div className="job-meta-item">
-              <MapPin size={18} color="#ff6b00" />
+              <MapPin size={18} color="#ea580c" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Khu vực</span>
-                <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Khu vực</span>
+                <p style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
                   {job.location_short || 'Chưa cập nhật'}
                 </p>
               </div>
@@ -259,8 +260,8 @@ export default function JobDetailModal({
             <div className="job-meta-item">
               <Briefcase size={18} color="#6366f1" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Kinh nghiệm</span>
-                <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Kinh nghiệm</span>
+                <p style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
                   {job.experience || 'Không yêu cầu'}
                 </p>
               </div>
@@ -269,28 +270,28 @@ export default function JobDetailModal({
             <div className="job-meta-item">
               <GraduationCap size={18} color="#0284c7" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Học vấn / Bằng cấp</span>
-                <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Học vấn / Bằng cấp</span>
+                <p style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
                   {job.education || 'Không bắt buộc'}
                 </p>
               </div>
             </div>
 
             <div className="job-meta-item">
-              <Calendar size={18} color="#f59e0b" />
+              <Calendar size={18} color="#b45309" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Hạn nộp hồ sơ</span>
-                <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Hạn nộp hồ sơ</span>
+                <p style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
                   {job.deadline || 'Hết hạn theo quy định'}
                 </p>
               </div>
             </div>
 
             <div className="job-meta-item">
-              <Clock size={18} color="#16a34a" />
+              <Clock size={18} color="#15803d" />
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Hình thức làm việc</span>
-                <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>Hình thức làm việc</span>
+                <p style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.9rem' }}>
                   {job.work_type || 'Toàn thời gian'}
                 </p>
               </div>
@@ -302,7 +303,7 @@ export default function JobDetailModal({
             <div
               style={{
                 background: '#fff7ed',
-                border: '1px solid #fed7aa',
+                border: '1px solid #fdba74',
                 padding: '0.9rem 1.25rem',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
@@ -314,7 +315,7 @@ export default function JobDetailModal({
               <CheckCircle2 size={20} color="#ea580c" />
               <div>
                 <span style={{ fontWeight: 700, color: '#c2410c' }}>Khử trùng lặp thông minh:</span> Tin tuyển dụng này được đồng bộ và gộp tự động từ các nguồn:{' '}
-                <span style={{ fontWeight: 700, color: '#111827' }}>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>
                   {[job.source, ...duplicateSources].join(', ')}
                 </span>
                 .
@@ -326,9 +327,9 @@ export default function JobDetailModal({
           {job.workplace_detail && (
             <div>
               <h4 className="detail-section-title">
-                <MapPin size={16} color="#ff6b00" /> Địa chỉ làm việc cụ thể
+                <MapPin size={16} color="#ea580c" /> Địa chỉ làm việc cụ thể
               </h4>
-              <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>
+              <p style={{ color: '#334155', fontSize: '0.9rem' }}>
                 {job.workplace_detail}
               </p>
             </div>
@@ -337,7 +338,7 @@ export default function JobDetailModal({
           {/* Job Description */}
           <div>
             <h4 className="detail-section-title">
-              <Briefcase size={16} color="#ff6b00" /> Mô tả công việc
+              <Briefcase size={16} color="#ea580c" /> Mô tả công việc
             </h4>
             <div className="detail-section-content">
               {job.job_description || 'Không có mô tả chi tiết cho bài đăng này.'}
@@ -347,7 +348,7 @@ export default function JobDetailModal({
           {/* Job Requirements */}
           <div>
             <h4 className="detail-section-title">
-              <GraduationCap size={16} color="#ff6b00" /> Yêu cầu ứng viên
+              <GraduationCap size={16} color="#ea580c" /> Yêu cầu ứng viên
             </h4>
             <div className="detail-section-content">
               {job.job_requirements || 'Không có yêu cầu cụ thể.'}
@@ -357,7 +358,7 @@ export default function JobDetailModal({
           {/* Benefits */}
           <div>
             <h4 className="detail-section-title">
-              <DollarSign size={16} color="#ff6b00" /> Quyền lợi & Đãi ngộ
+              <DollarSign size={16} color="#ea580c" /> Quyền lợi & Đãi ngộ
             </h4>
             <div className="detail-section-content">
               {job.benefits || 'Được hưởng đầy đủ chế độ đãi ngộ theo chính sách công ty.'}
@@ -367,7 +368,7 @@ export default function JobDetailModal({
 
         {/* Modal Footer */}
         <div className="modal-footer">
-          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
             Đồng bộ lần cuối: {job.created_at ? new Date(job.created_at).toLocaleString('vi-VN') : 'N/A'}
           </span>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -376,12 +377,13 @@ export default function JobDetailModal({
                 onClick={() => onAddToCompare(job)}
                 className="btn btn-secondary"
                 style={{
-                  color: isCompared ? '#ea580c' : '#475569',
-                  borderColor: isCompared ? '#fdba74' : '#cbd5e1',
+                  color: isCompared ? '#c2410c' : '#334155',
+                  borderColor: isCompared ? '#fdba74' : 'var(--border-medium)',
                   background: isCompared ? '#fff7ed' : '#ffffff',
+                  fontWeight: 600,
                 }}
               >
-                <Scale size={16} color={isCompared ? '#ea580c' : '#64748b'} />
+                <Scale size={16} color={isCompared ? '#ea580c' : '#475569'} />
                 {isCompared ? 'Đã thêm so sánh' : 'Thêm vào so sánh'}
               </button>
             )}

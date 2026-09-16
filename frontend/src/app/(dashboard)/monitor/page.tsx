@@ -72,36 +72,36 @@ export default function MonitorPage() {
 
       {/* KPI Telemetry Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ff6b00' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TỔNG BẢN GHI CÀO THÔ (RAW)</span>
+        <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ea580c' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TỔNG BẢN GHI CÀO THÔ (RAW)</span>
           <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', margin: '0.35rem 0' }}>
             {loading ? '...' : data?.totalRawScraped || 0}
           </p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Trong 7 bảng riêng jobs_&lt;source&gt;</span>
+          <span style={{ fontSize: '0.75rem', color: '#475569' }}>Trong 7 bảng riêng jobs_&lt;source&gt;</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #16a34a' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TIN ĐÃ CHUẨN HÓA (UNIFIED)</span>
-          <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#16a34a', margin: '0.35rem 0' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TIN ĐÃ CHUẨN HÓA (UNIFIED)</span>
+          <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#166534', margin: '0.35rem 0' }}>
             {loading ? '...' : data?.totalUnifiedSaved || 0}
           </p>
-          <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>● Đã lưu vào all_jobs_unified</span>
+          <span style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>● Đã lưu vào all_jobs_unified</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ef4444' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TIN TRÙNG LẶP ĐÃ GỘP</span>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TIN TRÙNG LẶP ĐÃ GỘP</span>
           <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#dc2626', margin: '0.35rem 0' }}>
             {loading ? '...' : data?.totalDuplicatesMerged || 0}
           </p>
-          <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>Fuzzy Match ≥ 90%</span>
+          <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 700 }}>Fuzzy Match ≥ 90%</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #0284c7' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TỶ LỆ LÀM SẠCH DỮ LIỆU</span>
-          <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0284c7', margin: '0.35rem 0' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TỶ LỆ LÀM SẠCH DỮ LIỆU</span>
+          <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0369a1', margin: '0.35rem 0' }}>
             {loading ? '...' : `${data?.overallDedupPercent || 0}%`}
           </p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Độ tinh gọn dữ liệu</span>
+          <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 500 }}>Độ tinh gọn dữ liệu</span>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default function MonitorPage() {
             <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
               Trạng Thái 7 Spider Thu Thập Dữ Liệu
             </h2>
-            <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
+            <p style={{ fontSize: '0.85rem', color: '#475569' }}>
               Mỗi website hoạt động độc lập, lưu trữ vào bảng raw riêng biệt trước khi qua module khử trùng lặp
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function MonitorPage() {
 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #eef0f3', textAlign: 'left', color: '#64748b' }}>
+            <tr style={{ borderBottom: '2px solid var(--border-medium)', textAlign: 'left', color: '#475569' }}>
               <th style={{ padding: '0.75rem' }}>Website Tuyển Dụng</th>
               <th style={{ padding: '0.75rem' }}>Engine Cào</th>
               <th style={{ padding: '0.75rem' }}>Bảng Dữ Liệu Raw</th>
@@ -135,33 +135,33 @@ export default function MonitorPage() {
             {data?.spiders.map((spider) => (
               <tr
                 key={spider.source}
-                style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}
+                style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s ease' }}
                 className="spider-row-hover"
               >
                 <td style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#0f172a' }}>
                   {spider.displayName}
                 </td>
                 <td style={{ padding: '0.85rem 0.75rem' }}>
-                  <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', color: '#475569' }}>
+                  <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', color: '#0f172a', border: '1px solid var(--border-subtle)' }}>
                     {spider.engine}
                   </code>
                 </td>
-                <td style={{ padding: '0.85rem 0.75rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                <td style={{ padding: '0.85rem 0.75rem', color: '#475569', fontFamily: 'var(--font-mono)', fontWeight: 500 }}>
                   {spider.rawTable}
                 </td>
                 <td style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#0f172a' }}>
                   {spider.rawCount}
                 </td>
-                <td style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#ff6b00' }}>
+                <td style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#c2410c' }}>
                   {spider.unifiedCount}
                 </td>
                 <td style={{ padding: '0.85rem 0.75rem' }}>
                   <span
                     className="badge"
                     style={{
-                      background: spider.status === 'ACTIVE' ? '#f0fdf4' : '#f8fafc',
-                      color: spider.status === 'ACTIVE' ? '#16a34a' : '#64748b',
-                      borderColor: spider.status === 'ACTIVE' ? '#bbf7d0' : '#e2e8f0',
+                      background: spider.status === 'ACTIVE' ? '#dcfce7' : '#f8fafc',
+                      color: spider.status === 'ACTIVE' ? '#166534' : '#475569',
+                      borderColor: spider.status === 'ACTIVE' ? '#86efac' : 'var(--border-medium)',
                       fontSize: '0.75rem',
                       fontWeight: 700,
                     }}
@@ -172,7 +172,7 @@ export default function MonitorPage() {
                 <td style={{ padding: '0.85rem 0.75rem', textAlign: 'right' }}>
                   <Link
                     href={`/jobs?source=${spider.source}`}
-                    style={{ color: '#ff6b00', fontWeight: 700, fontSize: '0.825rem' }}
+                    style={{ color: '#c2410c', fontWeight: 700, fontSize: '0.825rem' }}
                   >
                     Xem việc làm &rarr;
                   </Link>
@@ -188,23 +188,23 @@ export default function MonitorPage() {
         {/* Card 1: Cron & Automation */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Clock size={18} color="#ff6b00" /> Lịch Trình Tự Động Hóa (GitHub Actions)
+            <Clock size={18} color="#ea580c" /> Lịch Trình Tự Động Hóa (GitHub Actions)
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', fontWeight: 600 }}>Tần suất thực thi:</span>
+            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#475569', display: 'block', fontWeight: 700 }}>Tần suất thực thi:</span>
               <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
                 12:00 Trưa & 24:00 Đêm (Giờ Việt Nam UTC+7)
               </p>
-              <code style={{ fontSize: '0.75rem', color: '#ff6b00' }}>Cron: 0 5,17 * * * (UTC)</code>
+              <code style={{ fontSize: '0.75rem', color: '#c2410c', fontWeight: 600 }}>Cron: 0 5,17 * * * (UTC)</code>
             </div>
 
-            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', fontWeight: 600 }}>Cơ chế chạy song song:</span>
+            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#475569', display: 'block', fontWeight: 700 }}>Cơ chế chạy song song:</span>
               <p style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>
                 3 Workers đồng thời (ThreadPoolExecutor)
               </p>
-              <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>Đã tối ưu bộ nhớ RAM, bảo vệ hạ tầng 100%</span>
+              <span style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600 }}>Đã tối ưu bộ nhớ RAM, bảo vệ hạ tầng 100%</span>
             </div>
           </div>
         </div>
@@ -216,15 +216,15 @@ export default function MonitorPage() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ padding: '0.85rem', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-              <span style={{ fontSize: '0.75rem', color: '#0369a1', display: 'block', fontWeight: 600 }}>Trạng thái Bot:</span>
+              <span style={{ fontSize: '0.75rem', color: '#0369a1', display: 'block', fontWeight: 700 }}>Trạng thái Bot:</span>
               <p style={{ fontWeight: 700, color: '#0c4a6e', fontSize: '0.9rem' }}>
                 ✅ Đã kết nối & Verified
               </p>
-              <span style={{ fontSize: '0.75rem', color: '#0284c7' }}>Chat ID: 6204378947</span>
+              <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 600 }}>Chat ID: 6204378947</span>
             </div>
 
-            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', fontWeight: 600 }}>Nội dung thông báo:</span>
+            <div style={{ padding: '0.85rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#475569', display: 'block', fontWeight: 700 }}>Nội dung thông báo:</span>
               <p style={{ fontSize: '0.825rem', color: '#334155', lineHeight: 1.5 }}>
                 • Cảnh báo bắt đầu pipeline cào dữ liệu<br />
                 • Báo cáo tiến độ từng website (Success/Failed)<br />

@@ -80,7 +80,7 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
       style={{
         height: '68px',
         background: '#ffffff',
-        borderBottom: '1px solid #edf2f7',
+        borderBottom: '1px solid var(--border-subtle)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -88,7 +88,7 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 1px 4px rgba(15, 23, 42, 0.03)',
+        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
       }}
     >
       {/* Left Area: Sidebar Toggle & Total Jobs Stat pill */}
@@ -97,15 +97,15 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
           onClick={onToggleSidebar}
           style={{
             background: '#ffffff',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--border-medium)',
             borderRadius: '8px',
             padding: '7px 9px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#475569',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+            color: '#334155',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
             transition: 'all 0.15s ease',
           }}
           title={sidebarCollapsed ? 'Mở rộng Menu bên trái' : 'Thu gọn Menu'}
@@ -123,15 +123,15 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
             alignItems: 'center',
             gap: '0.65rem',
             background: '#fff7ed',
-            border: '1px solid #fed7aa',
+            border: '1px solid #fdba74',
             borderRadius: '999px',
             padding: '0.35rem 0.95rem',
           }}
         >
-          <Briefcase size={16} color="#ff6b00" />
+          <Briefcase size={16} color="#ea580c" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem' }}>
-            <span style={{ color: '#64748b', fontWeight: 600 }}>Thị trường:</span>
-            <strong style={{ color: '#ea580c', fontWeight: 800 }}>
+            <span style={{ color: '#475569', fontWeight: 600 }}>Thị trường:</span>
+            <strong style={{ color: '#c2410c', fontWeight: 800 }}>
               {totalJobs !== null ? `${totalJobs.toLocaleString('vi-VN')} việc làm` : 'Đang tính...'}
             </strong>
           </div>
@@ -143,9 +143,9 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
             alignItems: 'center',
             gap: '0.4rem',
             fontSize: '0.78rem',
-            color: '#16a34a',
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
+            color: '#166534',
+            background: '#dcfce7',
+            border: '1px solid #86efac',
             padding: '0.3rem 0.75rem',
             borderRadius: '999px',
           }}
@@ -155,9 +155,9 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
               width: '7px',
               height: '7px',
               borderRadius: '50%',
-              background: '#16a34a',
+              background: '#15803d',
               display: 'inline-block',
-              boxShadow: '0 0 0 2px rgba(22, 163, 74, 0.2)',
+              boxShadow: '0 0 0 2px rgba(22, 101, 52, 0.2)',
             }}
           />
           <span style={{ fontWeight: 700 }}>7/7 nền tảng hoạt động</span>
@@ -173,18 +173,18 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
             alignItems: 'center',
             gap: '0.55rem',
             background: '#f8fafc',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--border-medium)',
             borderRadius: '8px',
             padding: '0.4rem 0.85rem',
           }}
           title="Giờ chuẩn Việt Nam (GMT+7 Hà Nội)"
         >
-          <Clock size={16} color="#ff6b00" />
+          <Clock size={16} color="#ea580c" />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.15 }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)' }}>
-              {timeStr || '--:--:--'} <small style={{ fontSize: '0.68rem', color: '#ea580c', fontWeight: 700 }}>VN</small>
+              {timeStr || '--:--:--'} <small style={{ fontSize: '0.68rem', color: '#c2410c', fontWeight: 700 }}>VN</small>
             </span>
-            <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+            <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 500 }}>
               {dateStr || 'Thị trường mở'}
             </span>
           </div>

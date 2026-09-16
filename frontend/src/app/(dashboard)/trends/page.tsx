@@ -81,26 +81,26 @@ export default function TrendsPage() {
 
       {/* Highlights Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #ff6b00' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>CÔNG NGHỆ HOT NHẤT</span>
+        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #ea580c' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>CÔNG NGHỆ HOT NHẤT</span>
           <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', margin: '0.25rem 0' }}>React & Next.js</p>
-          <span className="badge" style={{ background: '#fff7ed', color: '#ea580c', borderColor: '#fed7aa', fontSize: '0.75rem' }}>
+          <span className="badge" style={{ background: '#fff7ed', color: '#c2410c', borderColor: '#fdba74', fontSize: '0.75rem', fontWeight: 700 }}>
             🔥 Nhu cầu tuyển dụng hàng đầu
           </span>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #10b981' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>MỨC LƯƠNG TRUNG BÌNH CAO</span>
-          <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#16a34a', margin: '0.25rem 0' }}>Golang & Cloud</p>
-          <span className="badge" style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0', fontSize: '0.75rem' }}>
+        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #16a34a' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>MỨC LƯƠNG TRUNG BÌNH CAO</span>
+          <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#166534', margin: '0.25rem 0' }}>Golang & Cloud</p>
+          <span className="badge" style={{ background: '#dcfce7', color: '#166534', borderColor: '#86efac', fontSize: '0.75rem', fontWeight: 700 }}>
             💰 Trung bình 35 - 70 triệu
           </span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #0284c7' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TĂNG TRƯỞNG NHANH NHẤT</span>
-          <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0284c7', margin: '0.25rem 0' }}>Python AI & DevOps</p>
-          <span className="badge" style={{ background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd', fontSize: '0.75rem' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TĂNG TRƯỞNG NHANH NHẤT</span>
+          <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0369a1', margin: '0.25rem 0' }}>Python AI & DevOps</p>
+          <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#7dd3fc', fontSize: '0.75rem', fontWeight: 700 }}>
             ↗️ Tăng trưởng mạnh mẽ
           </span>
         </div>
@@ -117,10 +117,10 @@ export default function TrendsPage() {
               style={{
                 padding: '0.45rem 0.95rem',
                 borderRadius: '8px',
-                border: selectedCategory === cat ? '1px solid #ff6b00' : '1px solid #e2e8f0',
-                background: selectedCategory === cat ? '#ff6b00' : '#ffffff',
-                color: selectedCategory === cat ? '#ffffff' : '#475569',
-                fontWeight: 600,
+                border: selectedCategory === cat ? '1px solid #ea580c' : '1px solid var(--border-medium)',
+                background: selectedCategory === cat ? 'var(--accent-gradient)' : '#ffffff',
+                color: selectedCategory === cat ? '#ffffff' : '#334155',
+                fontWeight: 700,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -133,7 +133,7 @@ export default function TrendsPage() {
 
         {/* Filter Input */}
         <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input
             type="text"
             className="search-input"
@@ -152,7 +152,7 @@ export default function TrendsPage() {
             <div key={i} className="glass-panel" style={{ height: '180px', opacity: 0.6 }} />
           ))
         ) : filteredTrends.length === 0 ? (
-          <p style={{ color: '#64748b', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem 0' }}>
+          <p style={{ color: '#475569', gridColumn: '1 / -1', textAlign: 'center', padding: '3rem 0', fontWeight: 600 }}>
             Không tìm thấy công nghệ nào phù hợp.
           </p>
         ) : (
@@ -166,20 +166,20 @@ export default function TrendsPage() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: '1rem',
-                borderTop: idx < 3 ? '3px solid #ff6b00' : '1px solid var(--border-subtle)',
+                borderTop: idx < 3 ? '3px solid #ea580c' : '1px solid var(--border-subtle)',
               }}
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span className="badge" style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                  <span className="badge" style={{ fontSize: '0.7rem', color: '#334155', fontWeight: 600 }}>
                     {tech.category}
                   </span>
                   <span
                     className="badge"
                     style={{
-                      background: tech.badge.includes('Hot') ? '#fff7ed' : tech.badge.includes('Tăng') ? '#f0fdf4' : '#f0f9ff',
-                      color: tech.badge.includes('Hot') ? '#ea580c' : tech.badge.includes('Tăng') ? '#16a34a' : '#0284c7',
-                      borderColor: tech.badge.includes('Hot') ? '#fed7aa' : tech.badge.includes('Tăng') ? '#bbf7d0' : '#bae6fd',
+                      background: tech.badge.includes('Hot') ? '#fff7ed' : tech.badge.includes('Tăng') ? '#dcfce7' : '#e0f2fe',
+                      color: tech.badge.includes('Hot') ? '#c2410c' : tech.badge.includes('Tăng') ? '#166534' : '#0369a1',
+                      borderColor: tech.badge.includes('Hot') ? '#fdba74' : tech.badge.includes('Tăng') ? '#86efac' : '#7dd3fc',
                       fontWeight: 700,
                       fontSize: '0.75rem',
                     }}
@@ -196,27 +196,27 @@ export default function TrendsPage() {
               {/* Share and progress bar */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                  <span style={{ color: '#64748b' }}>Tỷ trọng nhu cầu:</span>
-                  <span style={{ fontWeight: 800, color: '#ff6b00' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>Tỷ trọng nhu cầu:</span>
+                  <span style={{ fontWeight: 800, color: '#c2410c' }}>
                     {tech.count} jobs ({tech.sharePercent}%)
                   </span>
                 </div>
-                <div style={{ width: '100%', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
                   <div style={{ width: `${Math.max(10, tech.sharePercent)}%`, height: '100%', background: 'var(--accent-gradient)', borderRadius: '3px' }} />
                 </div>
               </div>
 
               {/* Salary & Action Button */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
                 <div>
-                  <span style={{ fontSize: '0.725rem', color: '#94a3b8', display: 'block' }}>Mức lương tham chiếu</span>
-                  <span style={{ fontSize: '0.925rem', fontWeight: 800, color: '#ea580c' }}>{tech.avgSalaryEstimate}</span>
+                  <span style={{ fontSize: '0.725rem', color: '#64748b', display: 'block', fontWeight: 600 }}>Mức lương tham chiếu</span>
+                  <span style={{ fontSize: '0.925rem', fontWeight: 800, color: '#c2410c' }}>{tech.avgSalaryEstimate}</span>
                 </div>
 
                 <Link
                   href={`/jobs?q=${encodeURIComponent(tech.name.split('/')[0].trim())}`}
                   className="btn btn-secondary"
-                  style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', borderColor: '#fed7aa', color: '#ea580c', background: '#fff7ed' }}
+                  style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', borderColor: '#fdba74', color: '#c2410c', background: '#fff7ed', fontWeight: 700 }}
                 >
                   Xem tin
                   <ArrowRight size={13} />

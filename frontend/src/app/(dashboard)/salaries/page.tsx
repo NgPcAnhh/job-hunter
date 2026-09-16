@@ -73,28 +73,28 @@ export default function SalariesPage() {
 
       {/* KPI Benchmark Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ff6b00' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>LƯƠNG KHỞI ĐIỂM (FRESHER)</span>
-          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ff6b00', margin: '0.35rem 0' }}>8 - 15 triệu</p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bình quân 10.5 triệu VND / tháng</span>
+        <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #ea580c' }}>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>LƯƠNG KHỞI ĐIỂM (FRESHER)</span>
+          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#c2410c', margin: '0.35rem 0' }}>8 - 15 triệu</p>
+          <span style={{ fontSize: '0.75rem', color: '#475569' }}>Bình quân 10.5 triệu VND / tháng</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #16a34a' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>KỸ SƯ TRUNG CẤP (MIDDLE)</span>
-          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#16a34a', margin: '0.35rem 0' }}>25 - 40 triệu</p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bình quân 32.5 triệu VND / tháng</span>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>KỸ SƯ TRUNG CẤP (MIDDLE)</span>
+          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#166534', margin: '0.35rem 0' }}>25 - 40 triệu</p>
+          <span style={{ fontSize: '0.75rem', color: '#475569' }}>Bình quân 32.5 triệu VND / tháng</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #0284c7' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>KỸ SƯ CAO CẤP (SENIOR)</span>
-          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0284c7', margin: '0.35rem 0' }}>40 - 65+ triệu</p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bình quân 52.5 triệu VND / tháng</span>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>KỸ SƯ CAO CẤP (SENIOR)</span>
+          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0369a1', margin: '0.35rem 0' }}>40 - 65+ triệu</p>
+          <span style={{ fontSize: '0.75rem', color: '#475569' }}>Bình quân 52.5 triệu VND / tháng</span>
         </div>
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderTop: '3px solid #9333ea' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>TECH LEAD / QUẢN LÝ</span>
-          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#9333ea', margin: '0.35rem 0' }}>65 - 120 triệu</p>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bình quân 80+ triệu VND / tháng</span>
+          <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 700 }}>TECH LEAD / QUẢN LÝ</span>
+          <p style={{ fontSize: '1.85rem', fontWeight: 800, color: '#7e22ce', margin: '0.35rem 0' }}>65 - 120 triệu</p>
+          <span style={{ fontSize: '0.75rem', color: '#475569' }}>Bình quân 80+ triệu VND / tháng</span>
         </div>
       </div>
 
@@ -107,9 +107,9 @@ export default function SalariesPage() {
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
                 Phổ Lương Chi Tiết Theo Cấp Bậc
               </h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Ước tính khoảng lương và số lượng vị trí tuyển dụng tương ứng</p>
+              <p style={{ fontSize: '0.85rem', color: '#475569' }}>Ước tính khoảng lương và số lượng vị trí tuyển dụng tương ứng</p>
             </div>
-            <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#ff6b00', fontWeight: 700 }}>
+            <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700 }}>
               Xem danh sách &rarr;
             </Link>
           </div>
@@ -123,35 +123,36 @@ export default function SalariesPage() {
                   key={lvl.level}
                   style={{
                     background: '#ffffff',
-                    border: '1px solid #eef0f3',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-sm)',
                     padding: '1.25rem',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.65rem',
+                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Award size={18} color="#ff6b00" />
+                      <Award size={18} color="#ea580c" />
                       <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{lvl.level}</h3>
                     </div>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ea580c' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#c2410c' }}>
                       {lvl.range}
                     </span>
                   </div>
 
-                  <p style={{ fontSize: '0.825rem', color: '#64748b' }}>{lvl.description}</p>
+                  <p style={{ fontSize: '0.825rem', color: '#334155' }}>{lvl.description}</p>
 
-                  <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${percent}%`, height: '100%', background: 'var(--accent-gradient)', borderRadius: '4px' }} />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#94a3b8' }}>
-                    <span>Số tin khớp trên hệ thống: {lvl.count} jobs</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#475569' }}>
+                    <span style={{ fontWeight: 500 }}>Số tin khớp trên hệ thống: <strong style={{ color: '#0f172a' }}>{lvl.count}</strong> jobs</span>
                     <Link
                       href={`/jobs?level=${encodeURIComponent(lvl.level.split('/')[0].trim())}`}
-                      style={{ color: '#ff6b00', fontWeight: 600 }}
+                      style={{ color: '#c2410c', fontWeight: 700 }}
                     >
                       Lọc theo cấp bậc này &rarr;
                     </Link>
@@ -167,7 +168,7 @@ export default function SalariesPage() {
           {/* Regional Table */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={18} color="#ff6b00" /> So Sánh Thu Nhập Theo Thành Phố
+              <MapPin size={18} color="#ea580c" /> So Sánh Thu Nhập Theo Thành Phố
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -178,7 +179,7 @@ export default function SalariesPage() {
                     padding: '0.85rem 1rem',
                     background: '#f8fafc',
                     borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--border-subtle)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -186,12 +187,12 @@ export default function SalariesPage() {
                 >
                   <div>
                     <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{c.city}</span>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{c.jobCount} việc làm ghi nhận</p>
+                    <p style={{ fontSize: '0.75rem', color: '#475569' }}>{c.jobCount} việc làm ghi nhận</p>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontWeight: 800, color: '#ea580c', fontSize: '0.95rem' }}>{c.range}</span>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>TB: ~{c.avgVnd} tr</p>
+                    <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '0.95rem' }}>{c.range}</span>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TB: ~{c.avgVnd} tr</p>
                   </div>
                 </div>
               ))}
@@ -201,7 +202,7 @@ export default function SalariesPage() {
           {/* Top Companies With Open Positions */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Building size={18} color="#ff6b00" /> Doanh Nghiệp Có Tuyển Dụng Mới
+              <Building size={18} color="#ea580c" /> Doanh Nghiệp Có Tuyển Dụng Mới
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -215,7 +216,7 @@ export default function SalariesPage() {
                     alignItems: 'center',
                     padding: '0.65rem 0.85rem',
                     borderRadius: '6px',
-                    border: '1px solid #eef0f3',
+                    border: '1px solid var(--border-subtle)',
                     background: '#ffffff',
                     transition: 'all 0.15s ease',
                   }}
@@ -225,7 +226,7 @@ export default function SalariesPage() {
                     <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {comp.company_name}
                     </p>
-                    <span style={{ fontSize: '0.75rem', color: '#ea580c', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.75rem', color: '#c2410c', fontWeight: 700 }}>
                       {comp.sample_salary || 'Lương thỏa thuận'}
                     </span>
                   </div>
