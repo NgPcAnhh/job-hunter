@@ -8,8 +8,6 @@ import {
   Briefcase,
   TrendingUp,
   DollarSign,
-  Activity,
-  Building2,
   Bookmark,
 } from 'lucide-react';
 import { getSavedJobs } from '@/lib/savedJobs';
@@ -33,8 +31,6 @@ export default function HeaderNav() {
     { label: 'Tổng quan', href: '/', icon: LayoutDashboard },
     { label: 'Xu hướng Kỹ năng', href: '/trends', icon: TrendingUp },
     { label: 'Ma trận Lương', href: '/salaries', icon: DollarSign },
-    { label: 'Doanh nghiệp', href: '/companies', icon: Building2 },
-    { label: 'Giám sát Pipeline', href: '/monitor', icon: Activity },
     { label: 'Bộ lọc Việc làm', href: '/jobs', icon: Briefcase },
     {
       label: 'Việc đã lưu',

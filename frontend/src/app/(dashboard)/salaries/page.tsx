@@ -15,6 +15,7 @@ import {
   Filter,
   Search,
   X,
+  ChevronDown,
   Cpu,
   Cloud,
   ShieldCheck,
@@ -48,6 +49,7 @@ export default function SalariesPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(true);
 
   const fetchSalaries = async () => {
     setLoading(true);
@@ -67,13 +69,11 @@ export default function SalariesPage() {
     fetchSalaries();
   }, []);
 
-  // Find active role if selected
   const activeRole = useMemo(() => {
     if (selectedRoleKey === 'all' || !data?.roles) return null;
     return data.roles.find((r) => r.key === selectedRoleKey) || null;
   }, [selectedRoleKey, data]);
 
-  // Filtered roles list based on search query
   const filteredRoles = useMemo(() => {
     if (!data?.roles) return [];
     if (!searchQuery.trim()) return data.roles;
@@ -86,7 +86,6 @@ export default function SalariesPage() {
     );
   }, [data?.roles, searchQuery]);
 
-  // Calculate dynamic KPI cards based on active role
   const kpis = useMemo(() => {
     if (!activeRole) {
       return {
@@ -125,12 +124,10 @@ export default function SalariesPage() {
     };
   }, [activeRole]);
 
-  // Dynamic levels breakdown
   const displayLevels = useMemo(() => {
     if (!data?.levels) return [];
     if (!activeRole) return data.levels;
 
-    // Adjust levels and counts proportionally for this role
     const totalRoleJobs = activeRole.jobCount || 30;
     return data.levels.map((lvl, index) => {
       let roleCount = 0;
@@ -168,7 +165,6 @@ export default function SalariesPage() {
     });
   }, [data?.levels, activeRole, kpis]);
 
-  // Dynamic city benchmarks
   const displayCities = useMemo(() => {
     if (!data?.cities) return [];
     if (!activeRole) return data.cities;
@@ -188,7 +184,13 @@ export default function SalariesPage() {
         ...c,
         avgVnd,
         range,
-        jobCount: Math.max(1, Math.round((activeRole.jobCount || 10) * (c.city === 'Hà Nội' ? 0.48 : c.city === 'Hồ Chí Minh' ? 0.44 : 0.08))),
+        jobCount: Math.max(
+          1,
+          Math.round(
+            (activeRole.jobCount || 10) *
+            (c.city === 'Hà Nội' ? 0.48 : c.city === 'Hồ Chí Minh' ? 0.44 : 0.08)
+          )
+        ),
       };
     });
   }, [data?.cities, activeRole]);
@@ -221,15 +223,15 @@ export default function SalariesPage() {
         </button>
       </div>
 
-      {/* Role / Position Filter Bar */}
+      {/* Role / Position Filter Bar with Smooth Toggle */}
       <div
         className="glass-panel"
         style={{
           padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
           borderLeft: '4px solid #ea580c',
+          overflow: 'hidden',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -243,129 +245,180 @@ export default function SalariesPage() {
             </span>
           </div>
 
-          {/* Search box for custom role/tech filter */}
-          <div style={{ position: 'relative', minWidth: '260px' }}>
-            <Search
-              size={15}
-              color="#94a3b8"
-              style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo vị trí hoặc công nghệ (vd: React, Golang...)"
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Search Input smoothly fades in/out */}
+            <div
               style={{
-                width: '100%',
-                padding: '0.45rem 2rem 0.45rem 2.2rem',
-                fontSize: '0.825rem',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '6px',
-                background: '#ffffff',
-                outline: 'none',
+                position: 'relative',
+                minWidth: '260px',
+                opacity: isFilterOpen ? 1 : 0,
+                pointerEvents: isFilterOpen ? 'auto' : 'none',
+                transform: isFilterOpen ? 'translateX(0)' : 'translateX(10px)',
+                transition: 'opacity 0.25s ease, transform 0.25s ease',
               }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
+            >
+              <Search
+                size={15}
+                color="#94a3b8"
+                style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo vị trí hoặc công nghệ (vd: React, Golang...)"
                 style={{
-                  position: 'absolute',
-                  right: '0.5rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  color: '#94a3b8',
+                  width: '100%',
+                  padding: '0.45rem 2rem 0.45rem 2.2rem',
+                  fontSize: '0.825rem',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '6px',
+                  background: '#ffffff',
+                  outline: 'none',
                 }}
-              >
-                <X size={14} />
-              </button>
-            )}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    right: '0.5rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Cam chủ đạo, Chữ trắng, Icon xoay mượt */}
+            <button
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                fontSize: '0.825rem',
+                fontWeight: 700,
+                color: '#ffffff',
+                background: '#ea580c',
+                border: '1px solid #ea580c',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)',
+                transition: 'background 0.2s ease, transform 0.1s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#c2410c')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#ea580c')}
+            >
+              <ChevronDown
+                size={15}
+                style={{
+                  transform: isFilterOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+              <span>{isFilterOpen ? 'Thu gọn' : 'Mở bộ lọc'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Role Pills List */}
+        {/* Collapsible Content with Smooth Max-Height and Opacity */}
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-            alignItems: 'center',
+            maxHeight: isFilterOpen ? '280px' : '0px',
+            opacity: isFilterOpen ? 1 : 0,
+            marginTop: isFilterOpen ? '1rem' : '0px',
+            transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease',
+            overflow: 'hidden',
           }}
         >
-          {/* All Positions Pill */}
-          <button
-            onClick={() => setSelectedRoleKey('all')}
+          <div
             style={{
               display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
               alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 0.85rem',
-              borderRadius: '20px',
-              fontSize: '0.825rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              border: selectedRoleKey === 'all' ? '1px solid #ea580c' : '1px solid var(--border-subtle)',
-              background: selectedRoleKey === 'all' ? '#ea580c' : '#ffffff',
-              color: selectedRoleKey === 'all' ? '#ffffff' : '#334155',
-              boxShadow: selectedRoleKey === 'all' ? '0 2px 6px rgba(234, 88, 12, 0.25)' : 'none',
+              paddingBottom: '0.25rem',
             }}
           >
-            <span>🌐 Tất cả vị trí</span>
-            <span
+            <button
+              onClick={() => setSelectedRoleKey('all')}
               style={{
-                fontSize: '0.7rem',
-                padding: '1px 6px',
-                borderRadius: '10px',
-                background: selectedRoleKey === 'all' ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
-                color: selectedRoleKey === 'all' ? '#ffffff' : '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '20px',
+                fontSize: '0.825rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                border: selectedRoleKey === 'all' ? '1px solid #ea580c' : '1px solid var(--border-subtle)',
+                background: selectedRoleKey === 'all' ? '#ea580c' : '#ffffff',
+                color: selectedRoleKey === 'all' ? '#ffffff' : '#334155',
+                boxShadow: selectedRoleKey === 'all' ? '0 2px 6px rgba(234, 88, 12, 0.25)' : 'none',
               }}
             >
-              {data?.totalJobs || 4499}
-            </span>
-          </button>
-
-          {/* Individual Roles */}
-          {filteredRoles.map((role) => {
-            const isSelected = selectedRoleKey === role.key;
-            return (
-              <button
-                key={role.key}
-                onClick={() => setSelectedRoleKey(role.key)}
+              <span>🌐 Tất cả vị trí</span>
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.45rem 0.85rem',
-                  borderRadius: '20px',
-                  fontSize: '0.825rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  border: isSelected ? '1px solid #ea580c' : '1px solid var(--border-subtle)',
-                  background: isSelected ? '#ea580c' : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#334155',
-                  boxShadow: isSelected ? '0 2px 6px rgba(234, 88, 12, 0.25)' : 'none',
+                  fontSize: '0.7rem',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  background: selectedRoleKey === 'all' ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                  color: selectedRoleKey === 'all' ? '#ffffff' : '#64748b',
                 }}
               >
-                <span>{ROLE_ICONS[role.key]}</span>
-                <span>{role.shortName}</span>
-                <span
+                {data?.totalJobs || 4499}
+              </span>
+            </button>
+
+            {filteredRoles.map((role) => {
+              const isSelected = selectedRoleKey === role.key;
+              return (
+                <button
+                  key={role.key}
+                  onClick={() => setSelectedRoleKey(role.key)}
                   style={{
-                    fontSize: '0.7rem',
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
-                    color: isSelected ? '#ffffff' : '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.45rem 0.85rem',
+                    borderRadius: '20px',
+                    fontSize: '0.825rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    border: isSelected ? '1px solid #ea580c' : '1px solid var(--border-subtle)',
+                    background: isSelected ? '#ea580c' : '#ffffff',
+                    color: isSelected ? '#ffffff' : '#334155',
+                    boxShadow: isSelected ? '0 2px 6px rgba(234, 88, 12, 0.25)' : 'none',
                   }}
                 >
-                  {role.jobCount}
-                </span>
-              </button>
-            );
-          })}
+                  <span>{ROLE_ICONS[role.key]}</span>
+                  <span>{role.shortName}</span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                      color: isSelected ? '#ffffff' : '#64748b',
+                    }}
+                  >
+                    {role.jobCount}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Active Filter Indicator */}
@@ -380,6 +433,7 @@ export default function SalariesPage() {
               borderRadius: '6px',
               border: '1px solid #ffedd5',
               fontSize: '0.825rem',
+              marginTop: '0.85rem',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
@@ -447,10 +501,10 @@ export default function SalariesPage() {
       </div>
 
       {/* Main 2-Column Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.5rem', alignItems: 'flex-start' }}>
-        {/* Left: Salary By Level Breakdown */}
-        <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'stretch' }}>
+        {/* Phổ Lương Chi Tiết Theo Cấp Bậc */}
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
                 Phổ Lương Chi Tiết Theo Cấp Bậc {activeRole ? `• ${activeRole.shortName}` : ''}
@@ -463,13 +517,13 @@ export default function SalariesPage() {
             </div>
             <Link
               href={activeRole ? `/jobs?q=${encodeURIComponent(activeRole.name.split('/')[0].trim())}` : '/jobs'}
-              style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700 }}
+              style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700, whiteSpace: 'nowrap' }}
             >
               Xem danh sách &rarr;
             </Link>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.65rem', flex: 1 }}>
             {displayLevels.map((lvl) => {
               const maxAvg = 80;
               const percent = Math.min(100, Math.round((lvl.avgVnd / maxAvg) * 100));
@@ -485,30 +539,28 @@ export default function SalariesPage() {
                     background: '#ffffff',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-sm)',
-                    padding: '1.25rem',
+                    padding: '0.85rem 1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.65rem',
+                    gap: '0.45rem',
                     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Award size={18} color="#ea580c" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{lvl.level}</h3>
+                      <Award size={16} color="#ea580c" />
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>{lvl.level}</h3>
                     </div>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#c2410c' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: '#c2410c' }}>
                       {lvl.range}
                     </span>
                   </div>
 
-                  <p style={{ fontSize: '0.825rem', color: '#334155' }}>{lvl.description}</p>
-
-                  <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${percent}%`, height: '100%', background: 'var(--accent-gradient)', borderRadius: '4px' }} />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#475569' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.775rem', color: '#475569' }}>
                     <span style={{ fontWeight: 500 }}>
                       Số tin khớp: <strong style={{ color: '#0f172a' }}>{lvl.count}</strong> jobs
                     </span>
@@ -516,7 +568,7 @@ export default function SalariesPage() {
                       href={targetUrl}
                       style={{ color: '#c2410c', fontWeight: 700 }}
                     >
-                      Lọc theo cấp bậc này &rarr;
+                      Lọc theo cấp bậc &rarr;
                     </Link>
                   </div>
                 </div>
@@ -525,48 +577,46 @@ export default function SalariesPage() {
           </div>
         </div>
 
-        {/* Right: Regional Comparison & Role Salary Chart (Replacing Top Companies) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Regional Table */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={18} color="#ea580c" /> So Sánh Thu Nhập Theo Thành Phố {activeRole ? `(${activeRole.shortName})` : ''}
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {displayCities.map((c) => (
-                <div
-                  key={c.city}
-                  style={{
-                    padding: '0.85rem 1rem',
-                    background: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9rem' }}>{c.city}</span>
-                    <p style={{ fontSize: '0.75rem', color: '#475569' }}>{c.jobCount} việc làm ghi nhận</p>
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '0.95rem' }}>{c.range}</span>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>TB: ~{c.avgVnd} tr</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* New Role Salary Chart (Replacing "Doanh Nghiệp Có Tuyển Dụng Mới") */}
+        {/* So Sánh Mức Lương Theo Chuyên Môn */}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <RoleSalaryChart
             roles={data?.roles}
             selectedRoleKey={selectedRoleKey}
             onSelectRole={(key) => setSelectedRoleKey(key)}
           />
+        </div>
+      </div>
+
+      {/* So Sánh Thu Nhập Theo Thành Phố */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <MapPin size={18} color="#ea580c" /> So Sánh Thu Nhập Theo Thành Phố {activeRole ? `(${activeRole.shortName})` : ''}
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          {displayCities.map((c) => (
+            <div
+              key={c.city}
+              style={{
+                padding: '1rem',
+                background: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>{c.city}</span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{c.jobCount} việc làm</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.25rem' }}>
+                <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '1.05rem' }}>{c.range}</span>
+                <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>TB: ~{c.avgVnd} tr</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

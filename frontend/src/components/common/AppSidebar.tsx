@@ -8,8 +8,6 @@ import {
   Briefcase,
   TrendingUp,
   DollarSign,
-  Activity,
-  Building2,
   Bookmark,
   ChevronLeft,
   ChevronRight,
@@ -41,8 +39,6 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
     { label: 'Tổng quan Thị trường', shortLabel: 'Tổng quan', href: '/', icon: LayoutDashboard },
     { label: 'Xu hướng Kỹ năng', shortLabel: 'Kỹ năng', href: '/trends', icon: TrendingUp },
     { label: 'Ma trận Lương IT', shortLabel: 'Lương', href: '/salaries', icon: DollarSign },
-    { label: 'Bản đồ Doanh nghiệp', shortLabel: 'Công ty', href: '/companies', icon: Building2 },
-    { label: 'Giám sát Pipeline', shortLabel: 'Pipeline', href: '/monitor', icon: Activity },
     { label: 'Bộ lọc & Tìm Việc', shortLabel: 'Tìm việc', href: '/jobs', icon: Briefcase },
     {
       label: 'Việc làm đã lưu',
