@@ -96,7 +96,7 @@ export async function GET() {
       totalDuplicates = 0;
     }
 
-    // 2.5. Thống kê top địa điểm
+    // 2.5. Thống kê top địa điểm và tỉnh thành
     const topLocationsRes = await query(`
       SELECT 
         COALESCE(NULLIF(TRIM(location_short), ''), 'Khác / Chưa rõ') as location,
@@ -111,7 +111,25 @@ export async function GET() {
       count: parseInt(r.count, 10),
     }));
 
-    // 2.6. 6 tin tuyển dụng mới nhất
+    // 2.6. Thống kê theo 63 tỉnh thành cho bản đồ Việt Nam
+    const provincesRes = await query(`
+      SELECT 
+        COALESCE(NULLIF(TRIM(location_short), ''), 'Khác / Chưa rõ') as province,
+        COUNT(*) as job_count,
+        COUNT(DISTINCT company_name) as company_count
+      FROM all_jobs_unified
+      GROUP BY province
+      ORDER BY job_count DESC
+      LIMIT 40;
+    `);
+    const provinces: any[] = provincesRes.rows.map((r: any) => ({
+      province: r.province,
+      jobCount: parseInt(r.job_count, 10),
+      companyCount: parseInt(r.company_count, 10),
+      percentage: totalUnified > 0 ? parseFloat(((parseInt(r.job_count, 10) / totalUnified) * 100).toFixed(1)) : 0,
+    }));
+
+    // 2.7. 6 tin tuyển dụng mới nhất
     const latestJobsRes = await query(`
       SELECT *
       FROM all_jobs_unified
@@ -125,6 +143,7 @@ export async function GET() {
       totalDuplicatesDetected: totalDuplicates,
       sources: sourcesStats,
       topLocations,
+      provinces,
       latestJobs,
       lastCrawledAt: latestJobs[0]?.created_at || new Date().toISOString(),
     };
