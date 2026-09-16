@@ -81,9 +81,18 @@ export interface LocationStat {
 
 export interface StatsApiResponse {
   totalUnified: number;
+  totalRawJobs?: number;
   totalDuplicatesDetected: number;
+  totalCompanies?: number;
   sources: SourceStat[];
   topLocations: LocationStat[];
+  topHiringCompanies?: {
+    company_name: string;
+    job_count: number;
+    logo?: string | null;
+    sample_salary?: string | null;
+    locations?: string[];
+  }[];
   latestJobs: UnifiedJob[];
   lastCrawledAt?: string;
 }

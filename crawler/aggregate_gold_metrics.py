@@ -156,6 +156,12 @@ def ensure_indexes_and_gold_tables(conn) -> None:
             cron_schedule JSONB NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS gold_dashboard_metrics (
+            id INT PRIMARY KEY,
+            data JSONB NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
         """
         cur.execute(gold_table_ddl)
         conn.commit()
@@ -178,11 +184,15 @@ def infer_industry_sector(company: str, title: str, req: str) -> str:
 
 
 def aggregate_overview_stats(conn) -> Dict[str, Any]:
-    logger.info("Computing gold_overview_stats...")
+    logger.info("Computing gold_overview_stats & gold_dashboard_metrics...")
     with conn.cursor() as cur:
         # Total unified
         cur.execute("SELECT COUNT(*) FROM all_jobs_unified;")
         total_unified = cur.fetchone()[0] or 0
+
+        # Total distinct companies
+        cur.execute("SELECT COUNT(DISTINCT company_name) FROM all_jobs_unified WHERE company_name IS NOT NULL AND company_name != '';")
+        total_companies = cur.fetchone()[0] or 0
 
         # Unified count per source
         cur.execute("SELECT LOWER(source), COUNT(*) FROM all_jobs_unified WHERE source IS NOT NULL GROUP BY LOWER(source);")
@@ -190,6 +200,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
 
         # Raw counts per source table
         sources_stats = []
+        total_raw_jobs = 0
         for src in KNOWN_SOURCES:
             raw_count = 0
             try:
@@ -199,6 +210,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
                 conn.rollback()
                 raw_count = unified_by_source.get(src, 0)
 
+            total_raw_jobs += raw_count
             sources_stats.append({
                 "source": src,
                 "rawCount": raw_count,
@@ -230,7 +242,31 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
         """)
         top_locations = [{"location": r[0], "count": r[1]} for r in cur.fetchall()]
 
-        # Latest jobs (top 6)
+        # Top 8 hiring companies
+        cur.execute("""
+            SELECT 
+                company_name, 
+                COUNT(*) as job_count, 
+                MAX(company_logo) as logo,
+                MAX(salary) as sample_salary,
+                ARRAY_AGG(DISTINCT COALESCE(NULLIF(TRIM(location_short), ''), 'Chưa rõ')) as locations
+            FROM all_jobs_unified
+            WHERE company_name IS NOT NULL AND company_name != ''
+            GROUP BY company_name
+            ORDER BY job_count DESC
+            LIMIT 8;
+        """)
+        top_hiring_companies = []
+        for r in cur.fetchall():
+            top_hiring_companies.append({
+                "company_name": r[0],
+                "job_count": r[1],
+                "logo": r[2],
+                "sample_salary": r[3],
+                "locations": (r[4] or [])[:2],
+            })
+
+        # Latest jobs (top 8)
         cur.execute("""
             SELECT 
                 job_url, source, job_title, company_name, company_url, company_logo,
@@ -238,7 +274,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
                 posted_date, deadline, keyword, extra_info, created_at
             FROM all_jobs_unified
             ORDER BY created_at DESC
-            LIMIT 6;
+            LIMIT 8;
         """)
         colnames = [desc[0] for desc in cur.description]
         latest_jobs = []
@@ -280,9 +316,12 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
 
         data = {
             "totalUnified": total_unified,
+            "totalRawJobs": total_raw_jobs,
             "totalDuplicatesDetected": total_duplicates,
+            "totalCompanies": total_companies,
             "sources": sources_stats,
             "topLocations": top_locations,
+            "topHiringCompanies": top_hiring_companies,
             "latestJobs": latest_jobs,
             "lastCrawledAt": latest_jobs[0]["created_at"] if latest_jobs else datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "filtersAvailable": {
@@ -292,6 +331,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
             }
         }
 
+        # Upsert both gold_overview_stats and gold_dashboard_metrics
         cur.execute("""
             INSERT INTO gold_overview_stats (id, data, updated_at)
             VALUES (1, %s, CURRENT_TIMESTAMP)
@@ -299,8 +339,17 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
                 data = EXCLUDED.data,
                 updated_at = CURRENT_TIMESTAMP;
         """, (json.dumps(data, ensure_ascii=False),))
+
+        cur.execute("""
+            INSERT INTO gold_dashboard_metrics (id, data, updated_at)
+            VALUES (1, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO UPDATE SET
+                data = EXCLUDED.data,
+                updated_at = CURRENT_TIMESTAMP;
+        """, (json.dumps(data, ensure_ascii=False),))
+
         conn.commit()
-        logger.info(f"gold_overview_stats updated (Total: {total_unified}, Duplicates: {total_duplicates})")
+        logger.info(f"gold_overview_stats & gold_dashboard_metrics updated (Total: {total_unified}, Companies: {total_companies}, Duplicates: {total_duplicates})")
         return data
 
 

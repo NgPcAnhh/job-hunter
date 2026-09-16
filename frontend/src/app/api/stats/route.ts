@@ -18,14 +18,21 @@ export async function GET() {
   try {
     // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
     try {
-      const goldRes = await query(`SELECT data, updated_at FROM gold_overview_stats WHERE id = 1;`);
+      const goldRes = await query(`
+        SELECT data, updated_at 
+        FROM gold_dashboard_metrics 
+        WHERE id = 1;
+      `);
       if (goldRes.rows.length > 0 && goldRes.rows[0].data) {
         const rowData = goldRes.rows[0].data;
         const response: StatsApiResponse = {
           totalUnified: rowData.totalUnified || 0,
+          totalRawJobs: rowData.totalRawJobs || 0,
           totalDuplicatesDetected: rowData.totalDuplicatesDetected || 0,
+          totalCompanies: rowData.totalCompanies || 0,
           sources: rowData.sources || [],
           topLocations: rowData.topLocations || [],
+          topHiringCompanies: rowData.topHiringCompanies || [],
           latestJobs: rowData.latestJobs || [],
           lastCrawledAt: rowData.lastCrawledAt || goldRes.rows[0].updated_at || new Date().toISOString(),
         };
