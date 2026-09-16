@@ -12,6 +12,8 @@ import {
   ExternalLink,
   ShieldCheck,
   Zap,
+  Menu,
+  X,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -96,25 +98,25 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
         <button
           onClick={onToggleSidebar}
           style={{
-            background: '#ffffff',
-            border: '1px solid var(--border-medium)',
+            background: sidebarCollapsed ? '#ffffff' : '#fff7ed',
+            border: `1px solid ${sidebarCollapsed ? 'var(--border-medium)' : '#fdba74'}`,
             borderRadius: '8px',
             padding: '7px 9px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#334155',
+            color: sidebarCollapsed ? '#334155' : '#c2410c',
             boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-            transition: 'all 0.15s ease',
+            transition: 'all 0.18s ease',
           }}
-          title={sidebarCollapsed ? 'Mở rộng Menu bên trái' : 'Thu gọn Menu'}
+          title={sidebarCollapsed ? 'Mở rộng Sidebar (3 thanh ngang)' : 'Thu gọn Sidebar (Đóng)'}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+          {sidebarCollapsed ? (
+            <Menu size={18} />
+          ) : (
+            <X size={18} />
+          )}
         </button>
 
         <div

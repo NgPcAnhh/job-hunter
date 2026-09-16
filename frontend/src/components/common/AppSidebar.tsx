@@ -135,26 +135,6 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               </div>
             )}
           </Link>
-
-          {!collapsed && (
-            <button
-              onClick={onToggle}
-              style={{
-                background: '#f8fafc',
-                border: '1px solid var(--border-medium)',
-                borderRadius: '6px',
-                padding: '5px',
-                cursor: 'pointer',
-                color: '#475569',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              title="Thu nhỏ Sidebar"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          )}
         </div>
 
         {/* Navigation Items */}
