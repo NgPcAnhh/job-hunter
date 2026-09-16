@@ -166,7 +166,7 @@ export default function VietnamLeafletMap({
     return { jobCount: 0, companyCount: 0, percentage: 0 };
   };
 
-  // Initialize Map (100% Free OpenStreetMap standard tiles)
+  // Initialize Map (100% Free OpenStreetMap / CARTO standard tiles)
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
@@ -181,18 +181,30 @@ export default function VietnamLeafletMap({
       scrollWheelZoom: true,
     });
 
-    // 100% FREE OpenStreetMap standard tile layer - No API Key, No Fee, Open Source
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // 100% FREE Open-Source Tile Layer (CartoDB Voyager powered by OpenStreetMap)
+    // Fast global CDN, no rate-limiting, no 403 Forbidden, 100% free with no API key
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
       maxZoom: 19,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors • 100% Free Open Source Map',
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a> • 100% Free Map',
     }).addTo(map);
 
     const layerGroup = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
     layerGroupRef.current = layerGroup;
 
+    // Trigger Leaflet layout recalculation to ensure all tiles render immediately
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 400);
+
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', handleResize);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -371,6 +383,18 @@ export default function VietnamLeafletMap({
 
       {/* Embedded CSS for custom pulses and tooltips */}
       <style jsx global>{`
+        .leaflet-container {
+          width: 100% !important;
+          height: 100% !important;
+          background: #f1f5f9 !important;
+          outline: none;
+          font-family: inherit !important;
+        }
+
+        .leaflet-tile-pane {
+          opacity: 1 !important;
+        }
+
         .custom-map-icon {
           background: transparent;
           border: none;
