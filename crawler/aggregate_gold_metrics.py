@@ -324,7 +324,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
             WHERE company_name IS NOT NULL AND company_name != ''
             GROUP BY company_name
             ORDER BY job_count DESC
-            LIMIT 8;
+            LIMIT 15;
         """)
         top_hiring_companies = []
         for r in cur.fetchall():

@@ -142,6 +142,24 @@ export interface SalaryCityStat {
   jobCount: number;
 }
 
+export interface RoleTechStat {
+  name: string;
+  avg: number;
+  range: string;
+}
+
+export interface SalaryRoleStat {
+  key: string;
+  name: string;
+  shortName: string;
+  avgVnd: number;
+  minVnd: number;
+  maxVnd: number;
+  range: string;
+  jobCount: number;
+  techs: RoleTechStat[];
+}
+
 export interface PipelineSpiderStatus {
   source: string;
   displayName: string;

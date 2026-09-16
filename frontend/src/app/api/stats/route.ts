@@ -129,7 +129,25 @@ export async function GET() {
       percentage: totalUnified > 0 ? parseFloat(((parseInt(r.job_count, 10) / totalUnified) * 100).toFixed(1)) : 0,
     }));
 
-    // 2.7. 6 tin tuyển dụng mới nhất
+    // 2.7. Top 15 Doanh nghiệp tuyển dụng
+    const topCompaniesRes = await query(`
+      SELECT 
+        company_name, 
+        COUNT(*) as job_count,
+        MAX(company_logo) as logo
+      FROM all_jobs_unified
+      WHERE company_name IS NOT NULL AND company_name != ''
+      GROUP BY company_name
+      ORDER BY job_count DESC
+      LIMIT 15;
+    `);
+    const topHiringCompanies = topCompaniesRes.rows.map((r: any) => ({
+      company_name: r.company_name,
+      job_count: parseInt(r.job_count, 10),
+      logo: r.logo,
+    }));
+
+    // 2.8. 6 tin tuyển dụng mới nhất
     const latestJobsRes = await query(`
       SELECT *
       FROM all_jobs_unified
@@ -144,6 +162,7 @@ export async function GET() {
       sources: sourcesStats,
       topLocations,
       provinces,
+      topHiringCompanies,
       latestJobs,
       lastCrawledAt: latestJobs[0]?.created_at || new Date().toISOString(),
     };

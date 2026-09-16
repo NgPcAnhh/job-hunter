@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Send,
   Zap,
+  Flame,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -77,6 +78,67 @@ export default function DashboardPage() {
       default:
         return 'badge-primary';
     }
+  };
+
+  const getSourceHeatConfig = (percent: number) => {
+    if (percent >= 25) {
+      return {
+        bg: 'linear-gradient(135deg, #9a3412 0%, #ea580c 100%)',
+        border: '#7c2d12',
+        text: '#ffffff',
+        subText: '#ffedd5',
+        badgeBg: 'rgba(255, 255, 255, 0.22)',
+        badgeText: '#ffffff',
+        tag: 'Cực nóng 🔥',
+        heatLevel: 4,
+        heatBarBg: 'rgba(255, 255, 255, 0.3)',
+        heatBarFill: '#ffffff',
+        accentGlow: '0 6px 18px -2px rgba(234, 88, 12, 0.35)',
+      };
+    }
+    if (percent >= 15) {
+      return {
+        bg: 'linear-gradient(135deg, #c2410c 0%, #f97316 100%)',
+        border: '#9a3412',
+        text: '#ffffff',
+        subText: '#ffedd5',
+        badgeBg: 'rgba(255, 255, 255, 0.2)',
+        badgeText: '#ffffff',
+        tag: 'Rất nóng ⚡',
+        heatLevel: 3,
+        heatBarBg: 'rgba(255, 255, 255, 0.3)',
+        heatBarFill: '#ffffff',
+        accentGlow: '0 6px 16px -2px rgba(249, 115, 22, 0.3)',
+      };
+    }
+    if (percent >= 8) {
+      return {
+        bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+        border: '#fdba74',
+        text: '#9a3412',
+        subText: '#c2410c',
+        badgeBg: '#fed7aa',
+        badgeText: '#9a3412',
+        tag: 'Ấm áp ♨️',
+        heatLevel: 2,
+        heatBarBg: '#fed7aa',
+        heatBarFill: '#ea580c',
+        accentGlow: '0 3px 10px rgba(251, 146, 60, 0.12)',
+      };
+    }
+    return {
+      bg: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+      border: '#cbd5e1',
+      text: '#1e293b',
+      subText: '#64748b',
+      badgeBg: '#e2e8f0',
+      badgeText: '#475569',
+      tag: 'Bình ổn ❄️',
+      heatLevel: 1,
+      heatBarBg: '#e2e8f0',
+      heatBarFill: '#94a3b8',
+      accentGlow: '0 1px 4px rgba(15, 23, 42, 0.04)',
+    };
   };
 
   const totalUnified = stats?.totalUnified || 0;
@@ -292,70 +354,171 @@ export default function DashboardPage() {
 
       {/* 4. SOURCES OVERVIEW & REGIONAL BREAKDOWN */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
-        {/* Sources Grid Card */}
-        <div className="glass-panel" style={{ padding: '1.5rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        {/* Sources Heatmap Card */}
+        <div className="glass-panel" style={{ padding: '1.5rem', height: '100%', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem' }}>
+                  <Flame size={13} color="#ea580c" /> Heatmap Nguồn Dữ Liệu
+                </span>
+                <span style={{ fontSize: '0.775rem', color: '#64748b', fontWeight: 600 }}>
+                  Thị phần tuyển dụng 7 nền tảng
+                </span>
+              </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                Bản Đồ Nguồn Tuyển Dụng (7 Nền Tảng)
+                Heatmap Nguồn Tuyển Dụng (7 Nền Tảng)
               </h3>
               <p style={{ fontSize: '0.825rem', color: '#475569', marginTop: '2px' }}>
-                Số lượng tin cào thô (Raw) và tin đã chuẩn hóa đồng bộ vào bảng tổng
+                Bản đồ nhiệt biểu thị mức độ sôi động & tỷ lệ đóng góp việc làm thực tế
               </p>
             </div>
-            <Link href="/jobs" style={{ fontSize: '0.85rem', color: '#c2410c', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              Xem tất cả &rarr;
-            </Link>
+
+            {/* Heat Scale Legend */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', padding: '5px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>
+              <span style={{ color: '#64748b' }}>Thang nhiệt:</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94a3b8' }} /> &lt;8%
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fdba74' }} /> 8-15%
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f97316' }} /> 15-25%
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c2410c' }} /> &gt;25% 🔥
+              </span>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.85rem', flex: 1 }}>
+          {/* Continuous Heatmap Spectrum Strip (100% Market Share Ribbon) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+              <span>Phổ nhiệt thị phần 100% (Market Share Ribbon)</span>
+              <span style={{ color: '#ea580c' }}>{totalUnified.toLocaleString('vi-VN')} việc làm</span>
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: '14px',
+                borderRadius: '7px',
+                overflow: 'hidden',
+                display: 'flex',
+                background: '#e2e8f0',
+                border: '1px solid #cbd5e1',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.08)',
+              }}
+            >
+              {stats?.sources
+                ?.slice()
+                .map((src) => {
+                  const percent = totalUnified > 0 ? Math.round((src.unifiedCount / totalUnified) * 100) : 0;
+                  const heat = getSourceHeatConfig(percent);
+                  return { ...src, percent, heat };
+                })
+                .sort((a, b) => b.unifiedCount - a.unifiedCount)
+                .map((src) => (
+                  <div
+                    key={src.source}
+                    title={`${src.source.toUpperCase()}: ${src.unifiedCount.toLocaleString('vi-VN')} jobs (${src.percent}%)`}
+                    style={{
+                      width: `${src.percent}%`,
+                      minWidth: src.percent > 0 ? '6px' : '0',
+                      height: '100%',
+                      background: src.heat.bg,
+                      transition: 'all 0.2s ease',
+                    }}
+                  />
+                ))}
+            </div>
+          </div>
+
+          {/* Heatmap Grid Cells */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem', flex: 1 }}>
             {stats?.sources.map((src) => {
               const percent = totalUnified > 0 ? Math.round((src.unifiedCount / totalUnified) * 100) : 0;
+              const heat = getSourceHeatConfig(percent);
+
               return (
                 <Link
                   key={src.source}
                   href={`/jobs?source=${src.source}`}
                   style={{
-                    background: '#ffffff',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '1rem',
+                    background: heat.bg,
+                    border: `1px solid ${heat.border}`,
+                    borderRadius: '12px',
+                    padding: '0.9rem',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: '0.75rem',
-                    transition: 'all 0.15s ease',
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                    gap: '0.65rem',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: heat.accentGlow,
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
-                  className="source-card-hover"
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#fdba74';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(234, 88, 12, 0.1)';
+                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)';
+                    e.currentTarget.style.boxShadow = '0 10px 26px -2px rgba(234, 88, 12, 0.4)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(15, 23, 42, 0.03)';
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = heat.accentGlow;
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className={`badge ${getSourceBadgeClass(src.source)}`} style={{ fontSize: '0.65rem' }}>
-                      {src.source.toUpperCase()}
+                  {/* Top Row: Source Name & Heat Tag */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.35rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: heat.text,
+                        background: heat.badgeBg,
+                        padding: '2px 7px',
+                        borderRadius: '5px',
+                        backdropFilter: 'blur(4px)',
+                      }}
+                    >
+                      {src.source}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700 }}>{percent}%</span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        color: heat.badgeText,
+                        background: heat.badgeBg,
+                        padding: '2px 6px',
+                        borderRadius: '999px',
+                        backdropFilter: 'blur(4px)',
+                      }}
+                    >
+                      {heat.tag}
+                    </span>
                   </div>
 
+                  {/* Middle Row: Job Count & Share */}
                   <div>
-                    <p style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
-                      {src.unifiedCount} <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>jobs</span>
-                    </p>
-                    <span style={{ fontSize: '0.725rem', color: '#475569' }}>
-                      Raw: {src.rawCount} bản ghi
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                      <p style={{ fontSize: '1.45rem', fontWeight: 800, color: heat.text, lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+                        {src.unifiedCount.toLocaleString('vi-VN')}
+                      </p>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: heat.subText }}>
+                        ({percent}%)
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: heat.subText, display: 'block', marginTop: '2px' }}>
+                      Raw: {src.rawCount.toLocaleString('vi-VN')} bản ghi
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ width: `${percent}%`, height: '100%', background: '#ea580c', borderRadius: '2px' }} />
+                  {/* Bottom: Heat Intensity Bar */}
+                  <div style={{ width: '100%', height: '4px', background: heat.heatBarBg, borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.max(10, percent)}%`, height: '100%', background: heat.heatBarFill, borderRadius: '2px' }} />
                   </div>
                 </Link>
               );
@@ -567,9 +730,18 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem',
+                maxHeight: '400px',
+                overflowY: 'auto',
+                paddingRight: '6px',
+              }}
+            >
               {stats?.topHiringCompanies && stats.topHiringCompanies.length > 0 ? (
-                stats.topHiringCompanies.slice(0, 4).map((comp, idx) => (
+                stats.topHiringCompanies.slice(0, 10).map((comp, idx) => (
                   <Link
                     key={idx}
                     href={`/jobs?q=${encodeURIComponent(comp.company_name)}`}
@@ -577,12 +749,13 @@ export default function DashboardPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.85rem 1rem',
+                      padding: '0.75rem 0.95rem',
                       background: '#ffffff',
                       border: '1px solid var(--border-subtle)',
                       borderRadius: '8px',
                       textDecoration: 'none',
                       transition: 'all 0.15s ease',
+                      flexShrink: 0,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = '#fdba74';
@@ -630,7 +803,7 @@ export default function DashboardPage() {
           {/* Footer bar matching Recent Jobs pagination bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-              Xếp hạng theo tổng số việc tuyển dụng
+              Top 10 doanh nghiệp tuyển dụng nhiều nhất
             </span>
             <Link href="/companies" style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 700 }}>
               Bảng xếp hạng chi tiết &rarr;
