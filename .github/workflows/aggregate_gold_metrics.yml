@@ -1,0 +1,47 @@
+name: Gold Metrics Aggregator
+
+'on':
+  schedule:
+    # Chạy tự động 4 lần/ngày lúc 01:00, 07:00, 13:00, 19:00 (giờ Việt Nam GMT+7 - chạy sau Cloud crawler 1 tiếng):
+    # - 18:00 UTC = 01:00 sáng VN (sau cloud crawl 00:00 VN)
+    # - 00:00 UTC = 07:00 sáng VN (sau cloud crawl 06:00 VN)
+    # - 06:00 UTC = 13:00 trưa VN (sau cloud crawl 12:00 VN)
+    # - 12:00 UTC = 19:00 tối VN (sau cloud crawl 18:00 VN)
+    - cron: '0 0,6,12,18 * * *'
+
+  workflow_dispatch:
+    # Cho phép kích hoạt tính toán thủ công bất kỳ lúc nào từ GitHub Actions UI
+
+concurrency:
+  group: gold-metrics-pipeline
+  cancel-in-progress: false
+
+jobs:
+  aggregate-gold-metrics:
+    name: Pre-calculate Gold Analytics & Update Indexes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r crawler/requirements.txt psycopg2-binary
+
+      - name: Run Gold Metrics Aggregator & Index Pipeline
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m crawler.aggregate_gold_metrics

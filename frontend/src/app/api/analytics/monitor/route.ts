@@ -16,6 +16,35 @@ const SPIDER_CONFIGS: { source: string; name: string; engine: PipelineSpiderStat
 
 export async function GET() {
   try {
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    try {
+      const goldRes = await query(`
+        SELECT total_raw, total_unified, total_duplicates, overall_dedup_percent, spiders, cron_schedule, updated_at 
+        FROM gold_crawler_metrics 
+        WHERE id = 1;
+      `);
+      if (goldRes.rows.length > 0 && goldRes.rows[0].spiders) {
+        const row = goldRes.rows[0];
+        const data: PipelineMonitorData = {
+          totalRawScraped: row.total_raw || 0,
+          totalUnifiedSaved: row.total_unified || 0,
+          totalDuplicatesMerged: row.total_duplicates || 0,
+          overallDedupPercent: row.overall_dedup_percent || 0,
+          spiders: row.spiders || [],
+          cronSchedule: row.cron_schedule || {
+            expression: '0 0,6,12,18 * * * (UTC)',
+            scheduleDescription: 'Chạy tự động 4 lần mỗi ngày lúc 01:00, 07:00, 13:00, 19:00 (GMT+7)',
+            parallelWorkers: 3,
+            alertChannel: 'Telegram Bot Alert (ID: 6204378947)',
+          },
+        };
+        return NextResponse.json(data);
+      }
+    } catch (goldErr) {
+      console.warn('Gold table query failed for monitor, falling back to live aggregation:', goldErr);
+    }
+
+    // 2. Fallback sang Live Query nếu bảng Gold chưa có dữ liệu
     let totalRawScraped = 0;
     const spiders: PipelineSpiderStatus[] = [];
 
@@ -87,8 +116,8 @@ export async function GET() {
       overallDedupPercent: Math.max(0, overallDedupPercent),
       spiders,
       cronSchedule: {
-        expression: '0 5,17 * * * (UTC)',
-        scheduleDescription: 'Chạy tự động 2 lần mỗi ngày lúc 12:00 trưa và 24:00 đêm (GMT+7)',
+        expression: '0 0,6,12,18 * * * (UTC)',
+        scheduleDescription: 'Chạy tự động 4 lần mỗi ngày lúc 01:00, 07:00, 13:00, 19:00 (GMT+7)',
         parallelWorkers: 3,
         alertChannel: 'Telegram Bot Alert (ID: 6204378947)',
       },

@@ -116,40 +116,47 @@ export async function GET(req: NextRequest) {
     const dataRes = await query(dataSql, dataValues);
     const jobs: UnifiedJob[] = dataRes.rows;
 
-    // Lấy danh sách các bộ lọc có sẵn (Facet aggregations)
-    const sourcesFacetRes = await query(`
-      SELECT source, COUNT(*) as count 
-      FROM all_jobs_unified 
-      WHERE source IS NOT NULL AND source != ''
-      GROUP BY source 
-      ORDER BY count DESC;
-    `);
+    // Lấy danh sách các bộ lọc có sẵn (Ưu tiên đọc từ gold_overview_stats để tránh 3 câu GROUP BY nặng)
+    let filtersAvailable = {
+      sources: [] as { source: string; count: number }[],
+      locations: [] as { location: string; count: number }[],
+      levels: [] as { level: string; count: number }[],
+    };
 
-    const locationsFacetRes = await query(`
-      SELECT location_short as location, COUNT(*) as count 
-      FROM all_jobs_unified 
-      WHERE location_short IS NOT NULL AND location_short != ''
-      GROUP BY location_short 
-      ORDER BY count DESC 
-      LIMIT 10;
-    `);
+    try {
+      const goldFacetRes = await query(`SELECT data FROM gold_overview_stats WHERE id = 1;`);
+      if (goldFacetRes.rows.length > 0 && goldFacetRes.rows[0].data?.filtersAvailable) {
+        filtersAvailable = goldFacetRes.rows[0].data.filtersAvailable;
+      }
+    } catch {
+      // Fallback below
+    }
 
-    const levelsFacetRes = await query(`
-      SELECT level, COUNT(*) as count 
-      FROM all_jobs_unified 
-      WHERE level IS NOT NULL AND level != ''
-      GROUP BY level 
-      ORDER BY count DESC 
-      LIMIT 10;
-    `);
-
-    const response: JobsApiResponse = {
-      jobs,
-      total,
-      page,
-      limit,
-      totalPages,
-      filtersAvailable: {
+    if (!filtersAvailable.sources || filtersAvailable.sources.length === 0) {
+      const sourcesFacetRes = await query(`
+        SELECT source, COUNT(*) as count 
+        FROM all_jobs_unified 
+        WHERE source IS NOT NULL AND source != ''
+        GROUP BY source 
+        ORDER BY count DESC;
+      `);
+      const locationsFacetRes = await query(`
+        SELECT location_short as location, COUNT(*) as count 
+        FROM all_jobs_unified 
+        WHERE location_short IS NOT NULL AND location_short != ''
+        GROUP BY location_short 
+        ORDER BY count DESC 
+        LIMIT 10;
+      `);
+      const levelsFacetRes = await query(`
+        SELECT level, COUNT(*) as count 
+        FROM all_jobs_unified 
+        WHERE level IS NOT NULL AND level != ''
+        GROUP BY level 
+        ORDER BY count DESC 
+        LIMIT 10;
+      `);
+      filtersAvailable = {
         sources: sourcesFacetRes.rows.map((r: any) => ({
           source: r.source,
           count: parseInt(r.count, 10),
@@ -162,7 +169,16 @@ export async function GET(req: NextRequest) {
           level: r.level,
           count: parseInt(r.count, 10),
         })),
-      },
+      };
+    }
+
+    const response: JobsApiResponse = {
+      jobs,
+      total,
+      page,
+      limit,
+      totalPages,
+      filtersAvailable,
     };
 
     return NextResponse.json(response);

@@ -6,6 +6,23 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    try {
+      const goldRes = await query(`SELECT total_jobs, levels, cities, top_companies, updated_at FROM gold_salary_benchmarks WHERE id = 1;`);
+      if (goldRes.rows.length > 0 && goldRes.rows[0].levels) {
+        return NextResponse.json({
+          totalJobs: goldRes.rows[0].total_jobs || 0,
+          levels: goldRes.rows[0].levels,
+          cities: goldRes.rows[0].cities,
+          topCompanies: goldRes.rows[0].top_companies,
+          updatedAt: goldRes.rows[0].updated_at || new Date().toISOString(),
+        });
+      }
+    } catch (goldErr) {
+      console.warn('Gold table query failed for salaries, falling back to live aggregation:', goldErr);
+    }
+
+    // 2. Fallback sang Live Query nếu bảng Gold chưa có dữ liệu
     const totalRes = await query(`SELECT COUNT(*) as count FROM all_jobs_unified;`);
     const totalJobs = parseInt(totalRes.rows[0]?.count || '0', 10);
 

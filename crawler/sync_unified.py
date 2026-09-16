@@ -313,6 +313,14 @@ def sync_all_sources_to_unified(
         logger.info(f"  • {src:<15}: Tổng {st['total']} | Mới: {st['new']} | Trùng: {st['duplicate']}")
     logger.info("=" * 60)
 
+    # 5. Tự động cập nhật các bảng Gold Metrics & Indexes
+    try:
+        from crawler.aggregate_gold_metrics import run_all_aggregations
+        logger.info("\n🚀 Đang tự động tính toán và cập nhật các bảng Gold Metrics...")
+        run_all_aggregations()
+    except Exception as e:
+        logger.warning(f"Không thể tự động tính toán Gold Metrics: {e}")
+
     return {
         "total_source_jobs": total_source_jobs,
         "new_jobs_inserted": len(new_jobs_to_insert),

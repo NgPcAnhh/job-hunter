@@ -26,6 +26,23 @@ function inferIndustrySector(company: string, title: string, req: string): strin
 
 export async function GET() {
   try {
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    try {
+      const goldRes = await query(`SELECT total_companies, total_jobs, companies, sectors, updated_at FROM gold_company_stats WHERE id = 1;`);
+      if (goldRes.rows.length > 0 && goldRes.rows[0].companies) {
+        return NextResponse.json({
+          totalCompanies: goldRes.rows[0].total_companies || 0,
+          totalJobs: goldRes.rows[0].total_jobs || 0,
+          companies: goldRes.rows[0].companies,
+          sectors: goldRes.rows[0].sectors,
+          updatedAt: goldRes.rows[0].updated_at || new Date().toISOString(),
+        });
+      }
+    } catch (goldErr) {
+      console.warn('Gold table query failed for companies, falling back to live aggregation:', goldErr);
+    }
+
+    // 2. Fallback sang Live Query nếu bảng Gold chưa có dữ liệu
     const totalRes = await query(`SELECT COUNT(*) as count FROM all_jobs_unified;`);
     const totalJobs = Math.max(1, parseInt(totalRes.rows[0]?.count || '1', 10));
 

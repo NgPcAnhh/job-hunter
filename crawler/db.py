@@ -129,6 +129,9 @@ def get_create_table_sql(table_name: str) -> str:
 
     CREATE INDEX IF NOT EXISTS idx_{clean_name}_source ON {clean_name}(source);
     CREATE INDEX IF NOT EXISTS idx_{clean_name}_company ON {clean_name}(company_name);
+    CREATE INDEX IF NOT EXISTS idx_{clean_name}_created_at ON {clean_name}(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_{clean_name}_location ON {clean_name}(location_short);
+    CREATE INDEX IF NOT EXISTS idx_{clean_name}_level ON {clean_name}(level);
     """
 
 

@@ -16,13 +16,33 @@ const KNOWN_SOURCES = [
 
 export async function GET() {
   try {
-    // 1. Tổng số job trong all_jobs_unified
+    // 1. Thử truy vấn từ bảng Gold Metrics đã tính toán sẵn (cực nhanh < 10ms)
+    try {
+      const goldRes = await query(`SELECT data, updated_at FROM gold_overview_stats WHERE id = 1;`);
+      if (goldRes.rows.length > 0 && goldRes.rows[0].data) {
+        const rowData = goldRes.rows[0].data;
+        const response: StatsApiResponse = {
+          totalUnified: rowData.totalUnified || 0,
+          totalDuplicatesDetected: rowData.totalDuplicatesDetected || 0,
+          sources: rowData.sources || [],
+          topLocations: rowData.topLocations || [],
+          latestJobs: rowData.latestJobs || [],
+          lastCrawledAt: rowData.lastCrawledAt || goldRes.rows[0].updated_at || new Date().toISOString(),
+        };
+        return NextResponse.json(response);
+      }
+    } catch (goldErr) {
+      console.warn('Gold table query failed, falling back to live aggregation:', goldErr);
+    }
+
+    // 2. Fallback sang Live Query nếu bảng Gold chưa có dữ liệu
+    // 2.1. Tổng số job trong all_jobs_unified
     const totalUnifiedRes = await query(
       `SELECT COUNT(*) as count FROM all_jobs_unified;`
     );
     const totalUnified = parseInt(totalUnifiedRes.rows[0]?.count || '0', 10);
 
-    // 2. Số job phân bổ theo nguồn trong all_jobs_unified
+    // 2.2. Số job phân bổ theo nguồn trong all_jobs_unified
     const unifiedBySourceRes = await query(`
       SELECT source, COUNT(*) as count 
       FROM all_jobs_unified 
@@ -33,7 +53,7 @@ export async function GET() {
       if (r.source) unifiedBySourceMap[r.source.toLowerCase()] = parseInt(r.count, 10);
     });
 
-    // 3. Đếm số bản ghi raw trong từng bảng riêng jobs_<source>
+    // 2.3. Đếm số bản ghi raw trong từng bảng riêng jobs_<source>
     const sourcesStats: SourceStat[] = [];
     for (const src of KNOWN_SOURCES) {
       let rawCount = 0;
@@ -50,7 +70,7 @@ export async function GET() {
       });
     }
 
-    // 4. Đếm số lượng job có trùng lặp được gộp
+    // 2.4. Đếm số lượng job có trùng lặp được gộp
     let totalDuplicates = 0;
     try {
       const dupRes = await query(`
@@ -64,7 +84,7 @@ export async function GET() {
       totalDuplicates = 0;
     }
 
-    // 5. Thống kê top địa điểm
+    // 2.5. Thống kê top địa điểm
     const topLocationsRes = await query(`
       SELECT 
         COALESCE(NULLIF(TRIM(location_short), ''), 'Khác / Chưa rõ') as location,
@@ -79,7 +99,7 @@ export async function GET() {
       count: parseInt(r.count, 10),
     }));
 
-    // 6. 6 tin tuyển dụng mới nhất
+    // 2.6. 6 tin tuyển dụng mới nhất
     const latestJobsRes = await query(`
       SELECT *
       FROM all_jobs_unified
