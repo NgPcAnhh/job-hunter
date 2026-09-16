@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { StatsApiResponse, UnifiedJob } from '@/types/job';
 import { useCachedData } from '@/lib/useCachedData';
 import JobDetailModal from '@/components/jobs/JobDetailModal';
+import VietnamJobMap from '@/components/analytics/VietnamJobMap';
 import {
   Briefcase,
   Layers,
@@ -284,7 +285,12 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* 3. MAIN 2-COLUMN SECTION: DATA SOURCES + SIDE METRICS */}
+      {/* 3. INTERACTIVE VIETNAM JOB DISTRIBUTION MAP */}
+      <section>
+        <VietnamJobMap provinces={stats?.provinces} totalUnified={stats?.totalUnified} />
+      </section>
+
+      {/* 4. MAIN 2-COLUMN SECTION: DATA SOURCES + SIDE METRICS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: '1.5rem', alignItems: 'flex-start' }}>
         {/* LEFT COLUMN: SOURCES BREAKDOWN & RECENT JOBS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

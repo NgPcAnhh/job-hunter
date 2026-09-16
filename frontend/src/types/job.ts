@@ -79,6 +79,13 @@ export interface LocationStat {
   count: number;
 }
 
+export interface ProvinceStat {
+  province: string;
+  jobCount: number;
+  companyCount: number;
+  percentage: number;
+}
+
 export interface StatsApiResponse {
   totalUnified: number;
   totalRawJobs?: number;
@@ -86,6 +93,7 @@ export interface StatsApiResponse {
   totalCompanies?: number;
   sources: SourceStat[];
   topLocations: LocationStat[];
+  provinces?: ProvinceStat[];
   topHiringCompanies?: {
     company_name: string;
     job_count: number;

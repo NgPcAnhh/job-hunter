@@ -178,9 +178,79 @@ def infer_industry_sector(company: str, title: str, req: str) -> str:
         return "Thương Mại Điện Tử & Bán Lẻ"
     if any(k in text for k in ["game", "unity", "vng", "gameloft"]):
         return "Game & Giải Trí Trực Tuyến"
-    if any(k in text for k in ["outsource", "solution", "software", "phần mềm", "global", "tech"]):
-        return "Phần Mềm & Outsourcing"
-    return "Công Nghệ Thông Tin Khác"
+def normalize_vietnam_province(loc_str: str) -> str:
+    if not loc_str:
+        return "Khác / Chưa rõ"
+    l = loc_str.lower().strip()
+    if any(k in l for k in ["hà nội", "ha noi", "thủ đô", "thành phố hà nội", "hn"]):
+        return "Hà Nội"
+    if any(k in l for k in ["hồ chí minh", "ho chi minh", "hcm", "tp hcm", "tp. hcm", "sài gòn", "sai gon", "tp.hcm"]):
+        return "Hồ Chí Minh"
+    if any(k in l for k in ["đà nẵng", "da nang", "tp đà nẵng", "tp da nang", "dn"]):
+        return "Đà Nẵng"
+    if any(k in l for k in ["hải phòng", "hai phong"]):
+        return "Hải Phòng"
+    if any(k in l for k in ["bình dương", "binh duong"]):
+        return "Bình Dương"
+    if any(k in l for k in ["bắc ninh", "bac ninh"]):
+        return "Bắc Ninh"
+    if any(k in l for k in ["đồng nai", "dong nai"]):
+        return "Đồng Nai"
+    if any(k in l for k in ["hưng yên", "hung yen"]):
+        return "Hưng Yên"
+    if any(k in l for k in ["hải dương", "hai duong"]):
+        return "Hải Dương"
+    if any(k in l for k in ["cần thơ", "can tho"]):
+        return "Cần Thơ"
+    if any(k in l for k in ["bà rịa", "vũng tàu", "ba ria", "vung tau"]):
+        return "Bà Rịa - Vũng Tàu"
+    if any(k in l for k in ["khánh hòa", "khanh hoa", "nha trang"]):
+        return "Khánh Hòa"
+    if any(k in l for k in ["quảng ninh", "quang ninh"]):
+        return "Quảng Ninh"
+    if any(k in l for k in ["thái nguyên", "thai nguyen"]):
+        return "Thái Nguyên"
+    if any(k in l for k in ["vĩnh phúc", "vinh phuc"]):
+        return "Vĩnh Phúc"
+    if any(k in l for k in ["thừa thiên huế", "thua thien hue", "huế", "hue"]):
+        return "Thừa Thiên Huế"
+    if any(k in l for k in ["quảng nam", "quang nam"]):
+        return "Quảng Nam"
+    if any(k in l for k in ["lâm đồng", "lam dong", "đà lạt", "da lat"]):
+        return "Lâm Đồng"
+    if any(k in l for k in ["long an"]):
+        return "Long An"
+    if any(k in l for k in ["nghệ an", "nghe an", "vinh"]):
+        return "Nghệ An"
+    if any(k in l for k in ["thanh hóa", "thanh hoa"]):
+        return "Thanh Hóa"
+    if any(k in l for k in ["bắc giang", "bac giang"]):
+        return "Bắc Giang"
+    if any(k in l for k in ["nam định", "nam dinh"]):
+        return "Nam Định"
+    if any(k in l for k in ["thái bình", "thai binh"]):
+        return "Thái Bình"
+    if any(k in l for k in ["hà nam", "ha nam"]):
+        return "Hà Nam"
+    if any(k in l for k in ["quảng ngãi", "quang ngai"]):
+        return "Quảng Ngãi"
+    if any(k in l for k in ["bình định", "binh dinh", "quy nhơn"]):
+        return "Bình Định"
+    if any(k in l for k in ["bình phước", "binh phuoc"]):
+        return "Bình Phước"
+    if any(k in l for k in ["tây ninh", "tay ninh"]):
+        return "Tây Ninh"
+    if any(k in l for k in ["tiền giang", "tien giang"]):
+        return "Tiền Giang"
+    if any(k in l for k in ["bến tre", "ben tre"]):
+        return "Bến Tre"
+    if any(k in l for k in ["kiên giang", "kien giang", "phú quốc"]):
+        return "Kiên Giang"
+    if any(k in l for k in ["cà mau", "ca mau"]):
+        return "Cà Mau"
+    if any(k in l for k in ["toàn quốc", "remote", "toan quoc"]):
+        return "Toàn quốc / Remote"
+    return "Khác / Chưa rõ"
 
 
 def aggregate_overview_stats(conn) -> Dict[str, Any]:
@@ -314,6 +384,37 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
         """)
         levels_facets = [{"level": r[0], "count": r[1]} for r in cur.fetchall()]
 
+        # 4. Normalized Vietnam Provinces Distribution (Jobs & Companies) for Vietnam Map
+        cur.execute("SELECT location_short, company_name FROM all_jobs_unified;")
+        province_map: Dict[str, Dict[str, Any]] = {
+            "Hà Nội": {"jobs": 0, "companies": set()},
+            "Đà Nẵng": {"jobs": 0, "companies": set()},
+            "Hồ Chí Minh": {"jobs": 0, "companies": set()},
+        }
+
+        for row in cur.fetchall():
+            raw_loc, comp = row
+            norm_prov = normalize_vietnam_province(raw_loc)
+            if norm_prov not in province_map:
+                province_map[norm_prov] = {"jobs": 0, "companies": set()}
+            province_map[norm_prov]["jobs"] += 1
+            if comp and comp.strip():
+                province_map[norm_prov]["companies"].add(comp.strip())
+
+        provinces_list = []
+        for prov_name, p_data in province_map.items():
+            j_cnt = p_data["jobs"]
+            c_cnt = len(p_data["companies"])
+            pct = round((j_cnt / max(1, total_unified)) * 100, 1)
+            provinces_list.append({
+                "province": prov_name,
+                "jobCount": j_cnt,
+                "companyCount": c_cnt,
+                "percentage": pct,
+            })
+
+        provinces_list.sort(key=lambda x: x["jobCount"], reverse=True)
+
         data = {
             "totalUnified": total_unified,
             "totalRawJobs": total_raw_jobs,
@@ -321,6 +422,7 @@ def aggregate_overview_stats(conn) -> Dict[str, Any]:
             "totalCompanies": total_companies,
             "sources": sources_stats,
             "topLocations": top_locations,
+            "provinces": provinces_list,
             "topHiringCompanies": top_hiring_companies,
             "latestJobs": latest_jobs,
             "lastCrawledAt": latest_jobs[0]["created_at"] if latest_jobs else datetime.datetime.now(datetime.timezone.utc).isoformat(),

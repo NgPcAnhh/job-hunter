@@ -36,6 +36,7 @@ export async function GET() {
           totalCompanies: rowData.totalCompanies || 0,
           sources: rowData.sources || [],
           topLocations: rowData.topLocations || [],
+          provinces: rowData.provinces || [],
           topHiringCompanies: rowData.topHiringCompanies || [],
           latestJobs: rowData.latestJobs || [],
           lastCrawledAt: rowData.lastCrawledAt || goldRes.rows[0].updated_at || new Date().toISOString(),
