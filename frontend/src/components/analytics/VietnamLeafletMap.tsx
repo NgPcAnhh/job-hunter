@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ProvinceStat } from '@/types/job';
@@ -21,8 +20,11 @@ interface GeoPoint {
   isKeyHub?: boolean;
 }
 
-// Baseline snapshot from database to guarantee numbers are NEVER blank/0
-const BASELINE_STATS: Record<string, { jobCount: number; companyCount: number; percentage: number }> = {
+// Baseline database snapshot (4,499 real jobs) ensuring numbers are never blank
+const BASELINE_STATS: Record<
+  string,
+  { jobCount: number; companyCount: number; percentage: number }
+> = {
   'hà nội': { jobCount: 1442, companyCount: 830, percentage: 32.1 },
   'hồ chí minh': { jobCount: 1143, companyCount: 759, percentage: 25.4 },
   'đà nẵng': { jobCount: 63, companyCount: 44, percentage: 1.4 },
@@ -116,18 +118,20 @@ export default function VietnamLeafletMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
-  const router = useRouter();
 
-  // Create fast lookup map with alias matching & baseline fallback
+  // Fast lookup map with alias matching & baseline fallback
   const statLookup = useMemo(() => {
-    const lookup = new Map<string, { jobCount: number; companyCount: number; percentage: number }>();
+    const lookup = new Map<
+      string,
+      { jobCount: number; companyCount: number; percentage: number }
+    >();
 
-    // 1. Fill baseline numbers first
+    // 1. Fill baseline numbers
     Object.entries(BASELINE_STATS).forEach(([key, val]) => {
       lookup.set(key.toLowerCase(), val);
     });
 
-    // 2. Overlay with live fetched database stats if available
+    // 2. Overlay live fetched stats
     if (provinces && provinces.length > 0) {
       provinces.forEach((p) => {
         if (!p.province) return;
@@ -139,7 +143,6 @@ export default function VietnamLeafletMap({
         };
         lookup.set(normalized, stat);
 
-        // Alias matching
         if (normalized.includes('hà nội')) lookup.set('ha noi', stat);
         if (normalized.includes('hồ chí minh') || normalized.includes('hcm')) {
           lookup.set('hồ chí minh', stat);
@@ -155,7 +158,9 @@ export default function VietnamLeafletMap({
     return lookup;
   }, [provinces]);
 
-  const getStat = (node: GeoPoint): { jobCount: number; companyCount: number; percentage: number } => {
+  const getStat = (
+    node: GeoPoint
+  ): { jobCount: number; companyCount: number; percentage: number } => {
     const key = node.name.toLowerCase();
     if (statLookup.has(key)) return statLookup.get(key)!;
 
@@ -166,7 +171,7 @@ export default function VietnamLeafletMap({
     return { jobCount: 0, companyCount: 0, percentage: 0 };
   };
 
-  // Initialize Map (100% Free OpenStreetMap / CARTO standard tiles)
+  // Initialize Map (ESRI World Street Map - 100% Free, NO Watermark, NO API Key)
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
@@ -176,25 +181,26 @@ export default function VietnamLeafletMap({
       center: [16.0, 107.2],
       zoom: 6,
       minZoom: 5,
-      maxZoom: 14,
+      maxZoom: 15,
       zoomControl: true,
       scrollWheelZoom: true,
     });
 
-    // 100% FREE Open-Source Tile Layer (CartoDB Voyager powered by OpenStreetMap)
-    // Fast global CDN, no rate-limiting, no 403 Forbidden, 100% free with no API key
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a> • 100% Free Map',
-    }).addTo(map);
+    // ESRI World Street Map: Clean, high-definition, 100% FREE, ZERO WATERMARK, NO API KEY
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 18,
+        attribution:
+          'Bản đồ &copy; <a href="https://www.esri.com/" target="_blank" rel="noreferrer">Esri</a> &mdash; 100% Miễn Phí (Không cần API Key)',
+      }
+    ).addTo(map);
 
     const layerGroup = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
     layerGroupRef.current = layerGroup;
 
-    // Trigger Leaflet layout recalculation to ensure all tiles render immediately
+    // Invalidate size to guarantee complete rendering
     const t1 = setTimeout(() => map.invalidateSize(), 100);
     const t2 = setTimeout(() => map.invalidateSize(), 400);
 
@@ -210,7 +216,7 @@ export default function VietnamLeafletMap({
     };
   }, []);
 
-  // Render & Update Markers
+  // Render & Update Markers with Dynamic Node Sizing Proportional to Job Count
   useEffect(() => {
     const map = mapInstanceRef.current;
     const layerGroup = layerGroupRef.current;
@@ -226,7 +232,7 @@ export default function VietnamLeafletMap({
     filtered.forEach((node) => {
       const stat = getStat(node);
       const isHub = node.isKeyHub;
-      const hasJobs = stat.jobCount > 0;
+      const count = stat.jobCount;
 
       // Color scheme
       let hubColor = '#ea580c';
@@ -239,25 +245,49 @@ export default function VietnamLeafletMap({
         hubBadgeClass = 'hub-hcm';
       }
 
-      // Marker Icon
+      // Proportional Node Sizing: Kích thước node to hay nhỏ tương ứng với số lượng job
+      let dotSize = 8;
+      let dotColor = '#94a3b8';
+
+      if (count >= 1000) {
+        dotSize = 34;
+        dotColor = hubColor;
+      } else if (count >= 100) {
+        dotSize = 24;
+        dotColor = '#ea580c';
+      } else if (count >= 50) {
+        dotSize = 18;
+        dotColor = '#f97316';
+      } else if (count >= 20) {
+        dotSize = 14;
+        dotColor = '#0284c7';
+      } else if (count >= 10) {
+        dotSize = 11;
+        dotColor = '#0284c7';
+      } else if (count > 0) {
+        dotSize = 9;
+        dotColor = '#38bdf8';
+      } else {
+        dotSize = 6;
+        dotColor = '#94a3b8';
+      }
+
       let iconHtml = '';
-      let iconSize: [number, number] = [20, 20];
-      let iconAnchor: [number, number] = [10, 10];
+      let iconSize: [number, number] = [dotSize, dotSize];
+      let iconAnchor: [number, number] = [dotSize / 2, dotSize / 2];
 
       if (isHub) {
-        iconSize = [36, 36];
-        iconAnchor = [18, 18];
+        // Hubs have outer pulsating radar ring
+        const outerSize = Math.max(38, dotSize + 12);
+        iconSize = [outerSize, outerSize];
+        iconAnchor = [outerSize / 2, outerSize / 2];
         iconHtml = `
-          <div class="leaflet-hub-marker ${hubBadgeClass}">
-            <span class="hub-pulse" style="background-color: ${hubColor};"></span>
-            <span class="hub-dot" style="background-color: ${hubColor};"></span>
+          <div class="leaflet-hub-marker ${hubBadgeClass}" style="width: ${outerSize}px; height: ${outerSize}px;">
+            <span class="hub-pulse" style="width: ${outerSize}px; height: ${outerSize}px; background-color: ${hubColor};"></span>
+            <span class="hub-dot" style="width: ${dotSize - 12}px; height: ${dotSize - 12}px; background-color: ${hubColor};"></span>
           </div>
         `;
       } else {
-        const dotColor = hasJobs ? (stat.jobCount >= 50 ? '#ea580c' : '#0284c7') : '#94a3b8';
-        const dotSize = hasJobs ? (stat.jobCount >= 50 ? 14 : 11) : 7;
-        iconSize = [dotSize, dotSize];
-        iconAnchor = [dotSize / 2, dotSize / 2];
         iconHtml = `
           <div class="leaflet-province-dot" style="
             width: ${dotSize}px;
@@ -266,6 +296,7 @@ export default function VietnamLeafletMap({
             border: 2px solid #ffffff;
             border-radius: 50%;
             box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            transition: transform 0.15s ease;
           "></div>
         `;
       }
@@ -279,9 +310,12 @@ export default function VietnamLeafletMap({
 
       const marker = L.marker([node.lat, node.lng], { icon: customIcon });
 
-      // Click to filter jobs
+      // DO NOT navigate away when clicking markers!
+      // Simply center on province gently and show tooltip
       marker.on('click', () => {
-        router.push(`/jobs?location=${encodeURIComponent(node.name)}`);
+        map.flyTo([node.lat, node.lng], Math.max(map.getZoom(), 8), {
+          duration: 0.6,
+        });
       });
 
       // Permanent tooltips for HN, DN, HCM
@@ -289,8 +323,8 @@ export default function VietnamLeafletMap({
         const tooltipContent = `
           <div class="permanent-hub-card ${hubBadgeClass}" style="
             border-left: 4px solid ${hubColor};
-            cursor: pointer;
             padding: 4px 6px;
+            user-select: none;
           ">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 3px;">
               <strong style="font-size: 13px; color: ${hubColor}; font-weight: 800;">
@@ -312,7 +346,7 @@ export default function VietnamLeafletMap({
         marker.bindTooltip(tooltipContent, {
           permanent: true,
           direction: node.id === 'danang' ? 'right' : 'left',
-          offset: node.id === 'danang' ? [14, 0] : [-14, 0],
+          offset: node.id === 'danang' ? [16, 0] : [-16, 0],
           className: 'leaflet-permanent-tooltip',
         });
       } else {
@@ -322,8 +356,8 @@ export default function VietnamLeafletMap({
             <div style="font-weight: 800; font-size: 13px; color: #ea580c; margin-bottom: 3px;">📍 ${node.name}</div>
             <div>💼 Việc làm: <strong>${stat.jobCount.toLocaleString()}</strong> (${stat.percentage}%)</div>
             <div>🏢 Công ty: <strong>${stat.companyCount.toLocaleString()}</strong></div>
-            <div style="font-size: 10px; color: #64748b; margin-top: 4px; border-top: 1px solid #e2e8f0; padding-top: 2px;">
-              Nhấp để xem danh sách việc ➔
+            <div style="font-size: 10.5px; color: #64748b; margin-top: 3px; border-top: 1px solid #e2e8f0; padding-top: 2px;">
+              Mật độ việc: <span style="color: ${dotColor}; font-weight: 700;">${count >= 100 ? 'Rất cao 🔥' : count >= 50 ? 'Khá cao ⚡' : count >= 20 ? 'Trung bình' : 'Ít'}</span>
             </div>
           </div>
         `;
@@ -332,7 +366,7 @@ export default function VietnamLeafletMap({
           permanent: false,
           sticky: true,
           direction: 'top',
-          offset: [0, -8],
+          offset: [0, -dotSize / 2 - 2],
           className: 'leaflet-hover-tooltip',
         });
       }
@@ -350,43 +384,118 @@ export default function VietnamLeafletMap({
     } else {
       map.flyTo([16.0, 107.2], 6, { duration: 0.8 });
     }
-  }, [statLookup, selectedRegion, router]);
+  }, [statLookup, selectedRegion]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '560px', borderRadius: '12px', overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '580px',
+        borderRadius: '12px',
+        overflow: 'hidden',
+      }}
+    >
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Free Tile & Navigation Indicator */}
+      {/* Visual Density Size Legend Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '8px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(6px)',
+          padding: '6px 10px',
+          borderRadius: '8px',
+          border: '1px solid #cbd5e1',
+          fontSize: '11px',
+          color: '#334155',
+          fontWeight: 600,
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+        }}
+      >
+        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '11.5px' }}>
+          Mật độ việc làm (Kích cỡ node):
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span
+              style={{
+                width: '14px',
+                height: '14px',
+                borderRadius: '50%',
+                backgroundColor: '#ea580c',
+                display: 'inline-block',
+              }}
+            />
+            &gt; 1.000 (Hub lớn)
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                backgroundColor: '#f97316',
+                display: 'inline-block',
+              }}
+            />
+            &gt; 50
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: '#0284c7',
+                display: 'inline-block',
+              }}
+            />
+            &gt; 10
+          </span>
+        </div>
+      </div>
+
+      {/* 100% Free Map Notice */}
       <div
         style={{
           position: 'absolute',
           bottom: '8px',
           right: '8px',
-          background: 'rgba(255, 255, 255, 0.92)',
+          background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(4px)',
-          padding: '3px 8px',
+          padding: '4px 10px',
           borderRadius: '6px',
           border: '1px solid #cbd5e1',
-          fontSize: '10.5px',
+          fontSize: '11px',
           color: '#475569',
           fontWeight: 600,
           zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
         }}
       >
-        <span style={{ color: '#16a34a', fontWeight: 700 }}>● 100% Free Map (OpenStreetMap)</span>
+        <span style={{ color: '#16a34a', fontWeight: 700 }}>
+          ● 100% Miễn Phí (Không cần API Key)
+        </span>
         <span>•</span>
-        <span>Dùng con lăn cuộn hoặc nút +/- để zoom</span>
+        <span>Cuộn chuột hoặc bấm +/- để zoom</span>
       </div>
 
-      {/* Embedded CSS for custom pulses and tooltips */}
+      {/* Embedded CSS */}
       <style jsx global>{`
         .leaflet-container {
           width: 100% !important;
           height: 100% !important;
-          background: #f1f5f9 !important;
+          background: #f8fafc !important;
           outline: none;
           font-family: inherit !important;
         }
@@ -402,8 +511,6 @@ export default function VietnamLeafletMap({
 
         .leaflet-hub-marker {
           position: relative;
-          width: 36px;
-          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -411,8 +518,6 @@ export default function VietnamLeafletMap({
 
         .leaflet-hub-marker .hub-pulse {
           position: absolute;
-          width: 36px;
-          height: 36px;
           border-radius: 50%;
           opacity: 0.45;
           animation: mapPulse 2s infinite ease-in-out;
@@ -420,8 +525,6 @@ export default function VietnamLeafletMap({
 
         .leaflet-hub-marker .hub-dot {
           position: relative;
-          width: 15px;
-          height: 15px;
           border-radius: 50%;
           border: 2.5px solid #ffffff;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -434,11 +537,11 @@ export default function VietnamLeafletMap({
             opacity: 0.8;
           }
           70% {
-            transform: scale(1.6);
+            transform: scale(1.5);
             opacity: 0;
           }
           100% {
-            transform: scale(1.6);
+            transform: scale(1.5);
             opacity: 0;
           }
         }
@@ -450,7 +553,6 @@ export default function VietnamLeafletMap({
           box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15) !important;
           padding: 6px 10px !important;
           pointer-events: auto !important;
-          cursor: pointer !important;
           transition: transform 0.15s ease !important;
         }
 
