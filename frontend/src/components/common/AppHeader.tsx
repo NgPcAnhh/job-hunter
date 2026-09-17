@@ -14,6 +14,7 @@ import {
   Zap,
   Menu,
   X,
+  BarChart3,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -207,6 +208,48 @@ export default function AppHeader({ sidebarCollapsed, onToggleSidebar }: AppHead
           <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
           <span>Làm mới</span>
         </button>
+
+        {/* PowerBI Overview Observation Screen Switcher Button (Cam chữ trắng + Hover ấn nút) */}
+        <Link
+          href="/overview"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+            color: '#ffffff',
+            border: '1px solid #c2410c',
+            padding: '0.42rem 0.85rem',
+            borderRadius: '8px',
+            fontSize: '0.825rem',
+            fontWeight: 800,
+            textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(234, 88, 12, 0.28)',
+            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 5px 14px rgba(234, 88, 12, 0.4)';
+            e.currentTarget.style.background = 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(234, 88, 12, 0.28)';
+            e.currentTarget.style.background = 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'translateY(1px)';
+            e.currentTarget.style.boxShadow = '0 1px 4px rgba(234, 88, 12, 0.2)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          title="Mở Dashboard Quan sát tổng quan thị trường"
+        >
+          <BarChart3 size={15} color="#ffffff" />
+          <span>Màn hình quan sát</span>
+        </Link>
 
         {/* Quick Search Shortcut Link */}
         <Link

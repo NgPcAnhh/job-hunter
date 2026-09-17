@@ -198,6 +198,7 @@ export default function VietnamJobMap({
         {/* Left: Real Leaflet Interactive Map */}
         <div
           style={{
+            height: '560px',
             borderRadius: '12px',
             border: '1px solid #e2e8f0',
             overflow: 'hidden',

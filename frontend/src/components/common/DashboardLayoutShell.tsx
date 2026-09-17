@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import AppSidebar from '@/components/common/AppSidebar';
 import AppHeader from '@/components/common/AppHeader';
 
@@ -10,6 +11,7 @@ export default function DashboardLayoutShell({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState<boolean>(false);
+  const pathname = usePathname();
 
   // Read initial collapsed state from localStorage if available
   useEffect(() => {
@@ -22,6 +24,11 @@ export default function DashboardLayoutShell({
       // Ignore
     }
   }, []);
+
+  // For /overview route, render children directly in full screen mode without standard layout shell
+  if (pathname === '/overview') {
+    return <>{children}</>;
+  }
 
   const handleToggle = () => {
     setCollapsed((prev) => {

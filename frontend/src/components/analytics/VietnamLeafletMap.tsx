@@ -176,9 +176,9 @@ export default function VietnamLeafletMap({
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
 
-    // Center on Vietnam
+    // Center & Bounds on Vietnam
     const map = L.map(mapContainerRef.current, {
-      center: [16.0, 107.2],
+      center: [15.8, 107.5],
       zoom: 6,
       minZoom: 5,
       maxZoom: 15,
@@ -192,7 +192,7 @@ export default function VietnamLeafletMap({
       {
         maxZoom: 18,
         attribution:
-          'Bản đồ &copy; <a href="https://www.esri.com/" target="_blank" rel="noreferrer">Esri</a> &mdash; 100% Miễn Phí (Không cần API Key)',
+          'Bản đồ &copy; <a href="https://www.esri.com/" target="_blank" rel="noreferrer">Esri</a> &mdash; 100% Miễn Phí',
       }
     ).addTo(map);
 
@@ -200,17 +200,27 @@ export default function VietnamLeafletMap({
     mapInstanceRef.current = map;
     layerGroupRef.current = layerGroup;
 
-    // Invalidate size to guarantee complete rendering
-    const t1 = setTimeout(() => map.invalidateSize(), 100);
-    const t2 = setTimeout(() => map.invalidateSize(), 400);
+    // Invalidate size immediately & on container resize
+    const invalidate = () => {
+      if (map) {
+        map.invalidateSize();
+      }
+    };
+    invalidate();
+    const t1 = setTimeout(invalidate, 100);
+    const t2 = setTimeout(invalidate, 300);
 
-    const handleResize = () => map.invalidateSize();
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(() => {
+      invalidate();
+    });
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -391,103 +401,47 @@ export default function VietnamLeafletMap({
       style={{
         position: 'relative',
         width: '100%',
-        height: '580px',
+        height: '100%',
         borderRadius: '12px',
         overflow: 'hidden',
       }}
     >
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Visual Density Size Legend Overlay */}
+      {/* Ultra-Compact Map Density Legend & Free Badge (Clean & Non-overlapping) */}
       <div
         style={{
           position: 'absolute',
-          bottom: '8px',
-          left: '8px',
-          background: 'rgba(255, 255, 255, 0.95)',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(6px)',
-          padding: '6px 10px',
-          borderRadius: '8px',
+          padding: '4px 8px',
+          borderRadius: '6px',
           border: '1px solid #cbd5e1',
           fontSize: '11px',
           color: '#334155',
           fontWeight: 600,
           zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-        }}
-      >
-        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '11.5px' }}>
-          Mật độ việc làm (Kích cỡ node):
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span
-              style={{
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                backgroundColor: '#ea580c',
-                display: 'inline-block',
-              }}
-            />
-            &gt; 1.000 (Hub lớn)
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#f97316',
-                display: 'inline-block',
-              }}
-            />
-            &gt; 50
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span
-              style={{
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor: '#0284c7',
-                display: 'inline-block',
-              }}
-            />
-            &gt; 10
-          </span>
-        </div>
-      </div>
-
-      {/* 100% Free Map Notice */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '8px',
-          right: '8px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(4px)',
-          padding: '4px 10px',
-          borderRadius: '6px',
-          border: '1px solid #cbd5e1',
-          fontSize: '11px',
-          color: '#475569',
-          fontWeight: 600,
-          zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '8px',
         }}
       >
-        <span style={{ color: '#16a34a', fontWeight: 700 }}>
-          ● 100% Miễn Phí (Không cần API Key)
+        <span style={{ fontWeight: 700, color: '#0f172a' }}>Mật độ:</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+          <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#ea580c', display: 'inline-block' }} />
+          &gt;1.000
         </span>
-        <span>•</span>
-        <span>Cuộn chuột hoặc bấm +/- để zoom</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#f97316', display: 'inline-block' }} />
+          &gt;50
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0284c7', display: 'inline-block' }} />
+          &gt;10
+        </span>
       </div>
 
       {/* Embedded CSS */}
@@ -495,7 +449,7 @@ export default function VietnamLeafletMap({
         .leaflet-container {
           width: 100% !important;
           height: 100% !important;
-          background: #f8fafc !important;
+          background: #aad3df !important;
           outline: none;
           font-family: inherit !important;
         }

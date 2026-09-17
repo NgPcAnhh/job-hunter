@@ -9,6 +9,7 @@ import {
   TrendingUp,
   DollarSign,
   Bookmark,
+  BarChart3,
 } from 'lucide-react';
 import { getSavedJobs } from '@/lib/savedJobs';
 
