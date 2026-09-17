@@ -114,6 +114,26 @@ export default function PowerBIOverviewDashboard() {
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
 
+  // Auto-scale state for responsive dashboard
+  const [dashScale, setDashScale] = useState<number>(1);
+
+  // Auto-scale: calculate scale factor based on viewport width vs reference design width (1920px)
+  // This mimics browser zoom behavior - on smaller screens, everything scales down proportionally
+  useEffect(() => {
+    const DESIGN_WIDTH = 1920;
+
+    const calcScale = () => {
+      const vw = window.innerWidth;
+      const scale = vw / DESIGN_WIDTH;
+      // Only scale down, never scale up beyond 1
+      setDashScale(Math.min(1, scale));
+    };
+
+    calcScale();
+    window.addEventListener('resize', calcScale);
+    return () => window.removeEventListener('resize', calcScale);
+  }, []);
+
   // 1. Hanoi Time Live Clock
   useEffect(() => {
     const updateTime = () => {
@@ -305,10 +325,18 @@ export default function PowerBIOverviewDashboard() {
 
   return (
     <div
-      className="overview-wrapper"
       style={{
         width: '100vw',
         height: '100vh',
+        overflow: 'hidden',
+        background: '#f8fafc',
+      }}
+    >
+    <div
+      className="overview-wrapper"
+      style={{
+        width: `${100 / dashScale}vw`,
+        height: `${100 / dashScale}vh`,
         overflow: 'hidden',
         background: '#f8fafc',
         color: '#0f172a',
@@ -316,12 +344,12 @@ export default function PowerBIOverviewDashboard() {
         flexDirection: 'column',
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         boxSizing: 'border-box',
+        transform: `scale(${dashScale})`,
+        transformOrigin: 'top left',
       }}
     >
       <style jsx global>{`
         .overview-wrapper {
-          width: 100vw;
-          height: 100vh;
           overflow: hidden;
           background: #f8fafc;
           color: #0f172a;
@@ -404,42 +432,6 @@ export default function PowerBIOverviewDashboard() {
         }
         .city-marquee-container:hover .city-marquee-track {
           animation-play-state: paused;
-        }
-
-        /* RESPONSIVE BREAKPOINTS FOR LAPTOPS, TABLETS & SMALL WINDOWS (<1366px) */
-        @media (max-width: 1366px) {
-          .overview-wrapper {
-            height: auto !important;
-            min-height: 100vh !important;
-            overflow-y: auto !important;
-          }
-          .overview-main-grid {
-            grid-template-columns: 1fr !important;
-            overflow: visible !important;
-            height: auto !important;
-          }
-          .overview-right-rows {
-            overflow: visible !important;
-            height: auto !important;
-          }
-          .overview-row-1 {
-            flex-direction: column !important;
-            overflow: visible !important;
-            height: auto !important;
-          }
-          .overview-row-2 {
-            flex-direction: column !important;
-            overflow: visible !important;
-            height: auto !important;
-          }
-          .overview-row-2 > div {
-            flex: 1 1 100% !important;
-          }
-          .glass-panel {
-            min-height: 380px !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
         }
       `}</style>
       {/* 1. TOP POWERBI EXECUTIVE HEADER BAR (Only 1 Back Button) */}
@@ -1671,6 +1663,7 @@ export default function PowerBIOverviewDashboard() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
