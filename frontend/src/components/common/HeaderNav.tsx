@@ -30,6 +30,7 @@ export default function HeaderNav() {
 
   const navItems = [
     { label: 'Tổng quan', href: '/', icon: LayoutDashboard },
+    { label: 'Màn hình Quan sát', href: '/overview', icon: BarChart3 },
     { label: 'Xu hướng Kỹ năng', href: '/trends', icon: TrendingUp },
     { label: 'Ma trận Lương', href: '/salaries', icon: DollarSign },
     { label: 'Bộ lọc Việc làm', href: '/jobs', icon: Briefcase },

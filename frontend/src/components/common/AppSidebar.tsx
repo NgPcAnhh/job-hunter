@@ -38,6 +38,7 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
 
   const navItems = [
     { label: 'Tổng quan Thị trường', shortLabel: 'Tổng quan', href: '/', icon: LayoutDashboard },
+    { label: 'Màn hình Quan sát', shortLabel: 'Quan sát', href: '/overview', icon: BarChart3 },
     { label: 'Xu hướng Kỹ năng', shortLabel: 'Kỹ năng', href: '/trends', icon: TrendingUp },
     { label: 'Ma trận Lương IT', shortLabel: 'Lương', href: '/salaries', icon: DollarSign },
     { label: 'Bộ lọc & Tìm Việc', shortLabel: 'Tìm việc', href: '/jobs', icon: Briefcase },
