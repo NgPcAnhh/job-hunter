@@ -43,20 +43,43 @@ export default function DashboardLayoutShell({
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
-      {/* 1. Left Collapsible Sidebar */}
-      <AppSidebar collapsed={collapsed} onToggle={handleToggle} />
+    <>
+      <style jsx>{`
+        .dashboard-main-content {
+          flex: 1;
+          padding: 1.75rem 2rem;
+          max-width: 1440px;
+          width: 100%;
+          margin: 0 auto;
+        }
 
-      {/* 2. Main Content Area */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        {/* Top Header */}
-        <AppHeader sidebarCollapsed={collapsed} onToggleSidebar={handleToggle} />
+        @media (max-width: 768px) {
+          .dashboard-main-content {
+            padding: 1rem 0.75rem;
+          }
+        }
 
-        {/* Content Container */}
-        <main style={{ flex: 1, padding: '1.75rem 2rem', maxWidth: '1440px', width: '100%', margin: '0 auto' }}>
-          {children}
-        </main>
+        @media (max-width: 480px) {
+          .dashboard-main-content {
+            padding: 0.75rem 0.5rem;
+          }
+        }
+      `}</style>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+        {/* 1. Left Collapsible Sidebar */}
+        <AppSidebar collapsed={collapsed} onToggle={handleToggle} />
+
+        {/* 2. Main Content Area */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* Top Header */}
+          <AppHeader sidebarCollapsed={collapsed} onToggleSidebar={handleToggle} />
+
+          {/* Content Container */}
+          <main className="dashboard-main-content">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
